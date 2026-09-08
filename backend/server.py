@@ -31,7 +31,7 @@ logging.basicConfig(
 logger = logging.getLogger("cerebroaspects.server")
 
 app = FastAPI(
-    title="CerebroASPECTS",
+    title="Neuriva",
     description="Automated ASPECTS scoring for acute ischemic stroke NCCT",
     version="2.1.0",
 )
@@ -47,7 +47,7 @@ app.add_middleware(
 
 @app.on_event("startup")
 async def startup_event():
-    logger.info("Initializing CerebroASPECTS backend service...")
+    logger.info("Initializing Neuriva backend service...")
     try:
         load_model()
     except Exception as e:
@@ -58,7 +58,7 @@ async def startup_event():
 async def health_check():
     return {
         "status": "healthy",
-        "engine": "CerebroASPECTS v2.1 (Unified Silhouette Vision)",
+        "engine": "Neuriva v2.1 (Unified Silhouette Vision)",
         "model": model_status(),
     }
 
