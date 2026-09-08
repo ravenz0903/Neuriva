@@ -3,8 +3,8 @@
 > *Developed for 36-Hour National Hackathon | Aligned with AHA/ASA Guidelines & DAWN/DEFUSE-3 Criteria*
 
 [![Live Demo](https://img.shields.io/badge/Demo-Localhost%3A3000-cyan?style=for-the-badge)](http://localhost:3000)
+[![FastAPI Backend](https://img.shields.io/badge/Backend-FastAPI%20%3A8000-009688?style=for-the-badge&logo=fastapi)](http://localhost:8000/health)
 [![Python](https://img.shields.io/badge/Python-3.10%2B-blue?style=for-the-badge&logo=python)](https://python.org)
-[![FastAPI](https://img.shields.io/badge/Backend-FastAPI-009688?style=for-the-badge&logo=fastapi)](https://fastapi.tiangolo.com)
 [![License](https://img.shields.io/badge/License-MIT-green?style=for-the-badge)](LICENSE)
 
 ---
@@ -33,17 +33,18 @@ CerebroASPECTS replaces opaque predictions with a **fully explainable, standardi
 ```
 
 ### Key Technical Innovations
-1. **Real-Time Client-Side Vision Engine:**
+1. **Unified Dual-Otsu & Silhouette Midline Registration:**
    - **Dual-Otsu Segmentation:** Strips background air and dense cortical bone to isolate pure brain parenchyma.
-   - **Silhouette-Based Midline Registration:** Locks the interhemispheric fissure to x=255 without lesion-drag distortion.
-   - **Contralateral Attenuation Differencing:** Explores subtle hypodensity (23 HU edema vs. 36 HU healthy tissue) across mirrored hemispheres.
-   - **Radial Ribbon Contouring:** Dynamically sweeps cortical territories (M1–M3) along the measured radial contour of the segmented brain rather than a hardcoded ellipse.
-2. **Interactive Anatomical Mind Map:**
-   - SVG-based hierarchical tree with hover-expanding clinical cards showing tissue loss %, estimated HU attenuation, and functional clinical impact.
-   - Bidirectional cross-highlighting syncing directly between mind map nodes and CT scan contours.
-3. **Clinical Guardrails:**
+   - **Silhouette-Based Midline Registration:** Dynamically registers the interhemispheric fissure via silhouette symmetry search (invariant to head tilt or horizontal shifting).
+   - **Contralateral Attenuation Differencing:** Explores subtle hypodensity across mirrored hemispheres with an enforced noise floor and hole closure.
+   - **Radial Ribbon Contouring:** Sweeps cortical territories (M1–M3) along the measured radial parenchymal boundary.
+2. **Clinical DICOM Pipeline:**
+   - True 16-bit DICOM ingestion with `RescaleSlope`/`RescaleIntercept` conversion to true Hounsfield Units ($HU = 	ext{Pixel} 	imes 	ext{Slope} + 	ext{Intercept}$).
+   - Standard stroke CT windowing ($WW=80, WL=40 \implies [0, 80	ext{ HU}]$).
+3. **Interactive Anatomical Mind Map:**
+   - SVG-based hierarchical tree with hover-expanding clinical cards showing tissue loss %, estimated HU attenuation, and functional impact.
+4. **Clinical Decision Guardrails:**
    - Non-prescriptive advisory card framed around DAWN / DEFUSE-3 trial window context.
-   - 4-corner DICOM PACS HUD overlay (W:80, L:40, Z=28).
 
 ---
 
@@ -51,14 +52,18 @@ CerebroASPECTS replaces opaque predictions with a **fully explainable, standardi
 ```text
 ├── website/
 │   └── index.html             # CerebroASPECTS v2 interactive diagnostic workstation
-├── aspects_engine.py          # Python geometric normalization & ASPECTS scoring core
+├── server.py                  # FastAPI REST API (http://localhost:8000)
+├── vision_engine.py           # Unified dual-Otsu, silhouette midline & ASPECTS scoring core
+├── model_service.py           # Pretrained U-Net loader with weights_only=True & fallback
+├── dicom_processor.py         # 16-bit DICOM decoding, HU calibration & stroke windowing
+├── test_backend.py            # Comprehensive unit & regression verification suite
+├── requirements.txt           # Production backend dependencies
 ├── app.py                     # Streamlit frontend alternative
-├── generate_dummy_data.py     # Generates synthetic NCCT slices & stroke masks
-├── tune_polygons.py           # Polygon contour alignment & visualizer
-├── quick_inspect.py           # Pretrained U-Net weights diagnostic utility
-├── TASKS.md                   # Master hackathon roadmap & literature tracker
-├── BACKEND_TASKS.md           # Person 2 FastAPI backend sprint tasks
-├── FRONTEND_TASKS.md          # Person 3 frontend integration sprint tasks
+├── generate_dummy_data.py     # Synthetic NCCT slice & stroke mask generator
+├── tune_polygons.py           # Polygon contour calibration visualizer
+├── quick_inspect.py           # Checkpoint diagnostic tool
+├── BACKEND_TASKS.md           # Backend sprint tasks & architecture reference
+├── FRONTEND_TASKS.md          # Frontend integration sprint tasks
 └── README.md
 ```
 
@@ -66,35 +71,36 @@ CerebroASPECTS replaces opaque predictions with a **fully explainable, standardi
 
 ## 🚀 Quick Start
 
-### 1. Launch the Diagnostic Web Console
+### 1. Launch the Backend API Service
 ```bash
-# From the repository root:
+# Install dependencies
+pip install -r requirements.txt
+
+# Start FastAPI server on port 8000
+python -m uvicorn server:app --host 0.0.0.0 --port 8000 --reload
+```
+Test backend health: [http://localhost:8000/health](http://localhost:8000/health)
+
+### 2. Run Comprehensive Verification Suite
+```bash
+python test_backend.py
+```
+
+### 3. Launch the Diagnostic Web Console
+```bash
 python -m http.server 3000 --directory website
 ```
-Open [http://localhost:3000](http://localhost:3000) in any modern web browser.
-
-### 2. Run the Python Geometric Engine
-```bash
-python -m venv .venv
-# Activate: .venv\Scripts\activate (Windows) or source .venv/bin/activate (Linux/Mac)
-pip install numpy opencv-python matplotlib streamlit
-python aspects_engine.py
-```
-
-### 3. Generate Synthetic Benchmark Datasets
-```bash
-python generate_dummy_data.py
-```
+Open [http://localhost:3000](http://localhost:3000) in any modern browser.
 
 ---
 
 ## 📚 Scientific Literature & Evidence Base
 - **ASPECTS-281 NCCT Atlas (Nature Scientific Data, Oct 2024):** [s41597-024-03973-y](https://www.nature.com/articles/s41597-024-03973-y) | Age-stratified NCCT template across 4 cohorts (10–89 yrs).
-- **Clinical Validation on MR CLEAN Registry (PMC7966210):** Validates automated ASPECTS software matching expert neuroradiologist consensus (ICC ~0.71).
-- **Symmetry-Enhanced Attention Network (arXiv:2110.05039 / MICCAI):** Scientifically validates bilateral symmetry disentanglement for NCCT stroke segmentation.
-- **APIS Paired CT-MRI Dataset (arXiv:2309.15243 / IEEE ISBI):** First paired NCCT and DWI/ADC acute stroke dataset.
+- **Clinical Validation on MR CLEAN Registry (PMC7966210):** Automated ASPECTS software matching expert neuroradiologist consensus (ICC ~0.71).
+- **Symmetry-Enhanced Attention Network (arXiv:2110.05039 / MICCAI):** Bilateral symmetry disentanglement for NCCT stroke segmentation.
+- **APIS Paired CT-MRI Dataset (arXiv:2309.15243 / IEEE ISBI):** Paired NCCT and DWI/ADC acute stroke dataset.
 
 ---
 
 ## ⚖️ Clinical Disclaimer
-*CerebroASPECTS is an observational clinical decision support and research prototype developed during a 36-hour hackathon. It does not provide autonomous medical diagnosis or treatment triage. All scores and contours require verification by a board-certified radiologist.*
+*CerebroASPECTS is an observational clinical decision support prototype developed during a 36-hour hackathon. It does not provide autonomous medical diagnosis or treatment triage. All scores and contours require verification by a board-certified radiologist.*

@@ -1,0 +1,17 @@
+# CerebroASPECTS Backend Dependencies
+# ── Core Production Requirements ──
+fastapi>=0.100.0
+uvicorn>=0.22.0
+python-multipart>=0.0.6
+pydicom>=2.4.0
+opencv-python>=4.8.0
+numpy>=1.24.0
+pillow>=10.0.0
+requests>=2.31.0
+matplotlib>=3.7.0
+huggingface_hub>=0.19.0
+
+# ── Optional: Deep Learning Acceleration (Automated Fallback active if absent) ──
+# Note: Install torch/torchvision if using PyTorch GPU acceleration in Python <=3.13
+# torch>=2.0.0
+# torchvision>=0.15.0
