@@ -174,7 +174,7 @@
             </h1>
 
             <p class="text-lg text-ink-muted leading-relaxed max-w-xl mb-9 font-normal">
-              Neuriva delivers clinical-grade automated ASPECTS scoring to emergency stroke triage — offline, fully explainable, and radiologist-verified.
+              Neuriva brings automated, fully explainable ASPECTS scoring to emergency stroke triage — running locally, with every deducted point traced to a named anatomical territory.
             </p>
 
             <div class="flex flex-wrap items-center gap-4">
@@ -207,12 +207,12 @@
               </h3>
               
               <p class="text-xs text-ink-muted leading-relaxed mb-5 font-normal">
-                Automated detection of MCA hypodensity, dynamic silhouette midline registration, and 10-point ASPECTS scoring with zero cloud latency.
+                Automated detection of MCA hypodensity, dynamic silhouette midline registration, and topographic ASPECTS scoring with no cloud round-trip.
               </p>
 
               <div class="inline-flex items-center space-x-2 px-3.5 py-1.5 rounded-full bg-stonebg-cardlight border border-stonebg-border text-xs font-mono text-ink-muted">
-                <span class="w-2 h-2 rounded-full bg-emerald-600"></span>
-                <span>Neuriva Vision Engine Ready</span>
+                <span class="w-2 h-2 rounded-full bg-ink-muted/50"></span>
+                <span>Ganglionic Level &bull; 7-Territory Subscore</span>
               </div>
 
             </div>
@@ -225,8 +225,8 @@
       <section class="py-16 border-b border-stonebg-border bg-stonebg-card/40">
         <div class="max-w-7xl mx-auto px-6 grid grid-cols-2 md:grid-cols-4 gap-8 text-center">
           <div class="p-6 rounded-xl bg-stonebg-card border border-stonebg-border soft-shadow">
-            <div class="font-serif text-4xl font-normal text-ink-950 mb-1">10 / 10</div>
-            <div class="text-xs font-mono uppercase tracking-wider text-ink-muted">ASPECTS Territories</div>
+            <div class="font-serif text-4xl font-normal text-ink-950 mb-1">7 / 10</div>
+            <div class="text-xs font-mono uppercase tracking-wider text-ink-muted">Ganglionic Territories</div>
           </div>
           <div class="p-6 rounded-xl bg-stonebg-card border border-stonebg-border soft-shadow">
             <div class="font-serif text-4xl font-normal text-ink-950 mb-1">&lt; 150ms</div>
@@ -234,11 +234,11 @@
           </div>
           <div class="p-6 rounded-xl bg-stonebg-card border border-stonebg-border soft-shadow">
             <div class="font-serif text-4xl font-normal text-ink-950 mb-1">16-bit</div>
-            <div class="text-xs font-mono uppercase tracking-wider text-ink-muted">DICOM Native Pipeline</div>
+            <div class="text-xs font-mono uppercase tracking-wider text-ink-muted">DICOM Ingestion</div>
           </div>
           <div class="p-6 rounded-xl bg-stonebg-card border border-stonebg-border soft-shadow">
-            <div class="font-serif text-4xl font-normal text-ink-950 mb-1">100%</div>
-            <div class="text-xs font-mono uppercase tracking-wider text-ink-muted">Offline Operation</div>
+            <div class="font-serif text-4xl font-normal text-ink-950 mb-1">Local</div>
+            <div class="text-xs font-mono uppercase tracking-wider text-ink-muted">Offline Inference</div>
           </div>
         </div>
       </section>
@@ -288,7 +288,7 @@
                 Silhouette Midline Registration
               </h4>
               <p class="text-sm text-ink-muted leading-relaxed">
-                Dynamically locks onto the interhemispheric fissure via silhouette reflection search. Completely invariant to patient head tilt or horizontal offset.
+                Dynamically locks onto the interhemispheric fissure via silhouette reflection search. Invariant to horizontal head offset and robust to rotation up to roughly 10 degrees.
               </p>
             </div>
 
@@ -316,7 +316,7 @@
                 Topographic ASPECTS Scoring
               </h4>
               <p class="text-sm text-ink-muted leading-relaxed">
-                Conforms strictly to 10-point Alberta Stroke criteria. Deducts points only when regional parenchymal loss exceeds 5%.
+                Scores the seven ganglionic territories of the 10-point Alberta Stroke criteria, reported as a subscore. Deducts points only when regional parenchymal loss exceeds 5%.
               </p>
             </div>
 
@@ -341,10 +341,10 @@
                 </svg>
               </div>
               <h4 class="font-serif text-xl font-semibold text-ink-950 mb-2.5">
-                100% Offline & DICOM Ready
+                Offline Inference &amp; DICOM Ready
               </h4>
               <p class="text-sm text-ink-muted leading-relaxed">
-                Runs locally on hospital machines with full 16-bit DICOM (.dcm) ingestion, true Hounsfield Unit scaling, and stroke windowing (WW=80, WL=40).
+                Inference runs locally on hospital machines, with 16-bit DICOM (.dcm) ingestion, true Hounsfield Unit rescaling, and stroke windowing (WW=80, WL=40).
               </p>
             </div>
 
@@ -370,7 +370,7 @@
           <div class="flex flex-wrap items-center justify-between gap-4 mb-8">
             <div>
               <span class="text-xs font-mono uppercase tracking-wider text-ink-muted block mb-1">Clinical Workstation</span>
-              <h2 class="font-serif text-3xl sm:text-4xl font-normal text-ink-950">Diagnostic Triage Console</h2>
+              <h2 class="font-serif text-3xl sm:text-4xl font-normal text-ink-950">Diagnostic Console</h2>
             </div>
 
             <!-- Quick Benchmark Selector -->
@@ -446,7 +446,7 @@
 
               <div class="mt-4 p-3 rounded-xl bg-stonebg-cardlight border border-stonebg-border text-[11px] text-ink-muted space-y-0.5">
                 <span class="font-semibold uppercase tracking-wider font-mono text-[9px] text-ink-950 block">Capture Preset:</span>
-                <p>&bull; Stroke windowing: WW=80, WL=40 HU. 16-bit DICOM calibrated automatically.</p>
+                <p>&bull; Stroke windowing: WW=80, WL=40 HU. 16-bit DICOM rescaled automatically on ingest.</p>
               </div>
             </div>
 
@@ -620,13 +620,13 @@
                       <span class="font-semibold text-ink-950">281 Patients (10–89y)</span>
                     </div>
                     <div class="p-2 rounded-lg bg-stonebg-cardlight border border-stonebg-border">
-                      <span class="text-ink-muted block text-[9px] uppercase">Template Stability</span>
-                      <span class="font-semibold text-emerald-700">98.4% Concordance</span>
+                      <span class="text-ink-muted block text-[9px] uppercase">Slice Level</span>
+                      <span class="font-semibold text-ink-950">Ganglionic • 7 Territories</span>
                     </div>
                   </div>
 
                   <div class="text-[11px] text-ink-muted leading-relaxed space-y-1.5">
-                    <p><strong class="text-ink-950">Neuriva Integration:</strong> Defines our calibrated stereotactic coordinates for deep nuclei (Caudate, Lentiform, Internal Capsule, Insula) and radial sweeps along the outer parenchymal ribbon (M1–M3).</p>
+                    <p><strong class="text-ink-950">Neuriva Integration:</strong> Informs the territory boundaries we model — deep nuclei (Caudate, Lentiform, Internal Capsule, Insula) as normalized contours, and M1–M3 as radial sweeps along the measured parenchymal ribbon. Our coordinates are hand-calibrated against this template rather than derived from it.</p>
                     <p><strong class="text-ink-950">Clinical Value:</strong> Eliminates subjective territory boundary guesswork across patients with varied cranial vault shapes and age-related brain atrophy.</p>
                   </div>
 
@@ -651,7 +651,7 @@
                   Automated Triage Concordance
                 </h4>
                 <p class="text-xs text-ink-muted leading-relaxed mb-4">
-                  Matches expert neuroradiologist consensus scoring with established intraclass correlation (ICC ~0.71) in acute window evaluation.
+                  The benchmark automated ASPECTS tools are measured against: agreement with neuroradiologist consensus at ICC ~0.71 in the acute window. Neuriva is not yet validated against this standard.
                 </p>
               </div>
 
@@ -660,8 +660,8 @@
                 <div class="pt-4 border-t border-stonebg-border space-y-3">
                   <div class="grid grid-cols-2 gap-2 text-[11px] font-mono">
                     <div class="p-2 rounded-lg bg-stonebg-cardlight border border-stonebg-border">
-                      <span class="text-ink-muted block text-[9px] uppercase">Inter-Rater Target</span>
-                      <span class="font-semibold text-ink-950">ICC ~ 0.71 Agreement</span>
+                      <span class="text-ink-muted block text-[9px] uppercase">Published Benchmark</span>
+                      <span class="font-semibold text-ink-950">ICC ~ 0.71 (prior tools)</span>
                     </div>
                     <div class="p-2 rounded-lg bg-stonebg-cardlight border border-stonebg-border">
                       <span class="text-ink-muted block text-[9px] uppercase">Human ER Variance</span>
@@ -670,13 +670,13 @@
                   </div>
 
                   <div class="text-[11px] text-ink-muted leading-relaxed space-y-1.5">
-                    <p><strong class="text-ink-950">Neuriva Integration:</strong> Validates our strict 5% relative territorial involvement threshold (`overlap / area &gt; 0.05`), which matches the neuroradiologist scoring standard and discards sub-threshold speckle.</p>
+                    <p><strong class="text-ink-950">Neuriva Integration:</strong> Sets the target our 5% relative involvement threshold (`overlap / area &gt; 0.05`) is calibrated toward. Prospective agreement testing against reader consensus is Phase 2 work, not a result we claim today.</p>
                     <p><strong class="text-ink-950">Clinical Value:</strong> Prevents emergency room misdiagnoses where exhausted non-radiologist ER physicians disagree up to 30% of the time on subtle hypodense tissue changes.</p>
                   </div>
 
                   <div class="pt-2 flex items-center justify-between text-[10px] font-mono text-ink-muted border-t border-stonebg-border/60">
                     <span>Ref: PMC7966210 / Neuroradiology</span>
-                    <span class="text-accent-warm font-semibold">Expert-Level Consensus</span>
+                    <span class="text-accent-warm font-semibold">Validation Target</span>
                   </div>
                 </div>
               </div>
@@ -695,7 +695,7 @@
                   DAWN & DEFUSE-3 Windows
                 </h4>
                 <p class="text-xs text-ink-muted leading-relaxed mb-4">
-                  Non-prescriptive decision support for mechanical thrombectomy qualification in patients presenting within extended 6 to 24-hour windows.
+                  Non-prescriptive decision support for the extended thrombectomy window: DAWN evaluated 6&ndash;24 h from last-known-well, DEFUSE-3 evaluated 6&ndash;16 h.
                 </p>
               </div>
 
@@ -704,23 +704,23 @@
                 <div class="pt-4 border-t border-stonebg-border space-y-3">
                   <div class="grid grid-cols-2 gap-2 text-[11px] font-mono">
                     <div class="p-2 rounded-lg bg-stonebg-cardlight border border-stonebg-border">
-                      <span class="text-ink-muted block text-[9px] uppercase">Treatment Window</span>
-                      <span class="font-semibold text-ink-950">6 to 24 Hours Post-Onset</span>
+                      <span class="text-ink-muted block text-[9px] uppercase">Extended Window</span>
+                      <span class="font-semibold text-ink-950">DAWN 6&ndash;24 h &bull; DEFUSE-3 6&ndash;16 h</span>
                     </div>
                     <div class="p-2 rounded-lg bg-stonebg-cardlight border border-stonebg-border">
-                      <span class="text-ink-muted block text-[9px] uppercase">Favorable Profile</span>
-                      <span class="font-semibold text-emerald-700">ASPECTS &ge; 6 Cutoff</span>
+                      <span class="text-ink-muted block text-[9px] uppercase">Guideline Cutoff</span>
+                      <span class="font-semibold text-emerald-700">ASPECTS &ge; 6 (AHA/ASA)</span>
                     </div>
                   </div>
 
                   <div class="text-[11px] text-ink-muted leading-relaxed space-y-1.5">
-                    <p><strong class="text-ink-950">Neuriva Integration:</strong> Categorizes scores into clinical severity bands (&ge;6 = Favorable Ischemic Profile; &lt;6 = Extensive Infarction with elevated reperfusion hemorrhage risk).</p>
+                    <p><strong class="text-ink-950">Neuriva Integration:</strong> Categorizes scores into clinical severity bands (&ge;6 = Favorable Ischemic Profile; &lt;6 = Extensive Infarction with elevated reperfusion hemorrhage risk). The &ge;6 threshold follows AHA/ASA guidance &mdash; neither trial selected on ASPECTS alone: DAWN used clinical&ndash;core mismatch and DEFUSE-3 used core volume &lt; 70 mL.</p>
                     <p><strong class="text-ink-950">Clinical Value:</strong> Provides essential decision guardrails for endovascular thrombectomy (EVT) candidate evaluation without overriding physician autonomy.</p>
                   </div>
 
                   <div class="pt-2 flex items-center justify-between text-[10px] font-mono text-ink-muted border-t border-stonebg-border/60">
                     <span>Ref: Stroke 2018;49:e44–e45</span>
-                    <span class="text-accent-warm font-semibold">Clinical Trial Validated</span>
+                    <span class="text-accent-warm font-semibold">Guideline Aligned</span>
                   </div>
                 </div>
               </div>
