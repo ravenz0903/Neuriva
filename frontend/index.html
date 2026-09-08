@@ -166,12 +166,15 @@
       <div class="lg:col-span-5 flex justify-center lg:justify-end">
         <div class="w-full max-w-md bg-stonebg-card rounded-2xl p-7 border border-stonebg-border soft-shadow-lg flex flex-col items-center text-center">
           
-          <!-- High-Res Anatomical Brain Illustration -->
-          <div class="w-full aspect-[4/3] rounded-xl bg-stonebg-cardlight border border-stonebg-border overflow-hidden mb-6 relative flex items-center justify-center p-3 shadow-inner group">
-            <img src="assets/brain_axial.jpg" alt="Neuriva Axial Brain Template" class="w-full h-full object-contain filter contrast-105 group-hover:scale-105 transition-transform duration-500">
-            <div class="absolute bottom-2 right-2 px-2.5 py-0.5 rounded bg-stonebg-card/90 border border-stonebg-border text-[10px] font-mono text-ink-muted">
-              Ganglionic Cut (Z=28)
-            </div>
+          <!-- High-Res Anatomical Brain Illustration (Seamless Blend) -->
+          <div class="w-full aspect-[4/3] flex items-center justify-center p-2 group mb-2">
+            <img src="assets/brain_axial.jpg" alt="Neuriva Axial Brain Template" class="w-full h-full object-contain mix-blend-multiply group-hover:scale-105 transition-transform duration-500">
+          </div>
+
+          <!-- Centered Anatomical Level Tag -->
+          <div class="inline-flex items-center space-x-1.5 px-3 py-1 rounded-full bg-stonebg-cardlight border border-stonebg-border text-[11px] font-mono text-ink-muted mb-4 shadow-sm">
+            <span class="w-1.5 h-1.5 rounded-full bg-accent-warm"></span>
+            <span>Ganglionic Axial Level &bull; Z = 28</span>
           </div>
 
           <h3 class="font-serif text-2xl font-semibold text-ink-950 mb-2">
