@@ -599,8 +599,8 @@
               <div>
                 <div class="flex items-center justify-between mb-3">
                   <span class="text-[11px] font-mono uppercase tracking-wider text-ink-muted">Nature Scientific Data (2024)</span>
-                  <span class="evidence-indicator text-[10px] font-mono px-2 py-0.5 rounded bg-stonebg-cardlight border border-stonebg-border text-ink-muted group-hover:text-accent-espresso transition-colors">
-                    Hover for Evidence ▾
+                  <span class="evidence-indicator text-[11px] font-mono tracking-wider uppercase text-stonebg-50/70 group-hover:text-stonebg-50 transition-colors">
+                    Hover
                   </span>
                 </div>
                 <h4 class="font-serif text-xl font-semibold text-ink-950 mb-2 group-hover:text-accent-espresso transition-colors">
@@ -643,8 +643,8 @@
               <div>
                 <div class="flex items-center justify-between mb-3">
                   <span class="text-[11px] font-mono uppercase tracking-wider text-ink-muted">MR CLEAN Registry Trial</span>
-                  <span class="evidence-indicator text-[10px] font-mono px-2 py-0.5 rounded bg-stonebg-cardlight border border-stonebg-border text-ink-muted group-hover:text-accent-espresso transition-colors">
-                    Hover for Evidence ▾
+                  <span class="evidence-indicator text-[11px] font-mono tracking-wider uppercase text-stonebg-50/70 group-hover:text-stonebg-50 transition-colors">
+                    Hover
                   </span>
                 </div>
                 <h4 class="font-serif text-xl font-semibold text-ink-950 mb-2 group-hover:text-accent-espresso transition-colors">
@@ -687,8 +687,8 @@
               <div>
                 <div class="flex items-center justify-between mb-3">
                   <span class="text-[11px] font-mono uppercase tracking-wider text-ink-muted">AHA / ASA Guidelines</span>
-                  <span class="evidence-indicator text-[10px] font-mono px-2 py-0.5 rounded bg-stonebg-cardlight border border-stonebg-border text-ink-muted group-hover:text-accent-espresso transition-colors">
-                    Hover for Evidence ▾
+                  <span class="evidence-indicator text-[11px] font-mono tracking-wider uppercase text-stonebg-50/70 group-hover:text-stonebg-50 transition-colors">
+                    Hover
                   </span>
                 </div>
                 <h4 class="font-serif text-xl font-semibold text-ink-950 mb-2 group-hover:text-accent-espresso transition-colors">
@@ -845,11 +845,11 @@
       if (isExpanded) {
         drawer.classList.remove("max-h-[500px]", "opacity-100");
         drawer.classList.add("max-h-0", "opacity-0");
-        if (indicator) indicator.textContent = "Hover for Evidence ▾";
+        if (indicator) indicator.textContent = "Hover";
       } else {
         drawer.classList.remove("max-h-0", "opacity-0");
         drawer.classList.add("max-h-[500px]", "opacity-100");
-        if (indicator) indicator.textContent = "Evidence Pinned ▴";
+        if (indicator) indicator.textContent = "Pinned";
         smoothCenterElement(cardEl);
       }
     }
