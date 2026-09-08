@@ -821,7 +821,22 @@
       window.scrollTo({ top: 0, behavior: "smooth" });
     }
 
-    // --- Interactive Evidence Card & Protocol Toggle ---
+    // --- Interactive Evidence Card & Protocol Toggle with Auto-Centering ---
+    let centerScrollTimer = null;
+
+    function smoothCenterElement(el) {
+      clearTimeout(centerScrollTimer);
+      // Wait for CSS expansion transition to begin, then smoothly center in viewport
+      centerScrollTimer = setTimeout(() => {
+        const rect = el.getBoundingClientRect();
+        const vh = window.innerHeight;
+        // Check if card extends beyond bottom edge or is clipped by top navbar
+        if (rect.bottom > vh - 40 || rect.top < 85) {
+          el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+      }, 160);
+    }
+
     function toggleCardEvidence(cardEl) {
       const drawer = cardEl.querySelector(".evidence-drawer");
       const indicator = cardEl.querySelector(".evidence-indicator");
@@ -835,6 +850,7 @@
         drawer.classList.remove("max-h-0", "opacity-0");
         drawer.classList.add("max-h-[500px]", "opacity-100");
         if (indicator) indicator.textContent = "Evidence Pinned ▴";
+        smoothCenterElement(cardEl);
       }
     }
 
@@ -851,6 +867,19 @@
         drawer.classList.remove("max-h-0", "opacity-0");
         drawer.classList.add("max-h-[300px]", "opacity-100");
         if (arrow) arrow.textContent = "▴ (Click to Collapse)";
+        smoothCenterElement(bannerEl);
+      }
+    }
+
+    function setupEvidenceHoverAutoCenter() {
+      document.querySelectorAll(".evidence-card").forEach(card => {
+        card.addEventListener("mouseenter", () => smoothCenterElement(card));
+        card.addEventListener("mouseleave", () => clearTimeout(centerScrollTimer));
+      });
+      const proto = document.getElementById("protocol-drawer");
+      if (proto && proto.parentElement) {
+        proto.parentElement.addEventListener("mouseenter", () => smoothCenterElement(proto.parentElement));
+        proto.parentElement.addEventListener("mouseleave", () => clearTimeout(centerScrollTimer));
       }
     }
 
@@ -865,6 +894,7 @@
 
       checkBackend();
       setupDropzone();
+      setupEvidenceHoverAutoCenter();
       loadBenchmarkCase('m1', false); // Pre-cache without navigating
     });
 
