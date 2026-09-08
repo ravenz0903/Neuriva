@@ -1,3 +1,9 @@
+import sys
+from pathlib import Path
+_backend_dir = str(Path(__file__).parent.parent.resolve() / "backend")
+if _backend_dir not in sys.path:
+    sys.path.insert(0, _backend_dir)
+
 """
 test_backend.py — Comprehensive Verification & Regression Test Suite
 ====================================================================

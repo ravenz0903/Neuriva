@@ -1,4 +1,4 @@
-# 🧠 CerebroASPECTS: Automated Topographic Stroke Scoring System
+# 🧠 Neuriva: Automated Topographic Stroke Scoring System
 > **Explainable AI Decision Support for Acute Ischemic Stroke Triage**  
 > *Developed for 36-Hour National Hackathon | Aligned with AHA/ASA Guidelines & DAWN/DEFUSE-3 Criteria*
 
@@ -50,21 +50,29 @@ CerebroASPECTS replaces opaque predictions with a **fully explainable, standardi
 
 ## 📁 Repository Structure
 ```text
-├── website/
-│   └── index.html             # CerebroASPECTS v2 interactive diagnostic workstation
-├── server.py                  # FastAPI REST API (http://localhost:8000)
-├── vision_engine.py           # Unified dual-Otsu, silhouette midline & ASPECTS scoring core
-├── model_service.py           # Pretrained U-Net loader with weights_only=True & fallback
-├── dicom_processor.py         # 16-bit DICOM decoding, HU calibration & stroke windowing
-├── test_backend.py            # Comprehensive unit & regression verification suite
-├── requirements.txt           # Production backend dependencies
-├── app.py                     # Streamlit frontend alternative
-├── generate_dummy_data.py     # Synthetic NCCT slice & stroke mask generator
-├── tune_polygons.py           # Polygon contour calibration visualizer
-├── quick_inspect.py           # Checkpoint diagnostic tool
-├── BACKEND_TASKS.md           # Backend sprint tasks & architecture reference
-├── FRONTEND_TASKS.md          # Frontend integration sprint tasks
-└── README.md
+Neuriva/
+├── backend/                   # FastAPI backend services & core vision engine
+│   ├── server.py              # REST API endpoints (:8000)
+│   ├── vision_engine.py       # Dual-Otsu, silhouette midline & 10-point ASPECTS core
+│   ├── dicom_processor.py     # 16-bit DICOM ingestion, HU calibration & stroke windowing
+│   ├── model_service.py       # Pretrained U-Net loader with weights_only=True & fallback
+│   ├── aspects_engine.py      # Baseline ASPECTS reference engine
+│   └── quick_inspect.py       # Model weights inspection utility
+├── frontend/                  # Modern diagnostic PACS & triage workstation
+│   └── index.html             # High-performance workstation (DrishtiAI editorial design)
+├── tests/                     # Automated testing & evaluation
+│   ├── test_backend.py        # Comprehensive unit & regression verification suite
+│   └── generate_dummy_data.py # Synthetic NCCT slice & stroke mask generator
+├── tools/                     # Clinical calibration & alternative frontends
+│   ├── tune_polygons.py       # Polygon contour calibration visualizer
+│   └── app.py                 # Streamlit workstation alternative
+├── docs/                      # Team task checklists & clinical specifications
+│   ├── BACKEND_TASKS.md       # Backend sprint tasks & architecture reference
+│   ├── FRONTEND_TASKS.md      # Frontend integration tasks
+│   └── TASKS.md               # Master roadmap & scientific citations
+├── requirements.txt           # Unified backend package dependencies
+├── README.md                  # System overview & clinical documentation
+└── .gitignore                 # Exclusion rules
 ```
 
 ---
@@ -77,18 +85,18 @@ CerebroASPECTS replaces opaque predictions with a **fully explainable, standardi
 pip install -r requirements.txt
 
 # Start FastAPI server on port 8000
-python -m uvicorn server:app --host 0.0.0.0 --port 8000 --reload
+python -m uvicorn backend.server:app --host 0.0.0.0 --port 8000 --reload
 ```
 Test backend health: [http://localhost:8000/health](http://localhost:8000/health)
 
 ### 2. Run Comprehensive Verification Suite
 ```bash
-python test_backend.py
+python tests/test_backend.py
 ```
 
 ### 3. Launch the Diagnostic Web Console
 ```bash
-python -m http.server 3000 --directory website
+python -m http.server 3000 --directory frontend
 ```
 Open [http://localhost:3000](http://localhost:3000) in any modern browser.
 
