@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en" class="scroll-smooth">
+<html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -72,6 +72,17 @@
     .soft-shadow-lg {
       box-shadow: 0 12px 28px -4px rgba(35, 27, 21, 0.12), 0 4px 12px -2px rgba(35, 27, 21, 0.06);
     }
+    .page-view {
+      display: none;
+      animation: fadeIn 0.25s ease-in-out forwards;
+    }
+    .page-view.active {
+      display: block;
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(6px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
     /* Subtle custom scrollbar */
     ::-webkit-scrollbar {
       width: 7px;
@@ -92,13 +103,13 @@
 <body class="min-h-screen flex flex-col antialiased selection:bg-ink-900 selection:text-stonebg-50">
 
   <!-- ==================== HEADER NAVBAR ==================== -->
-  <header class="sticky top-0 z-50 bg-[#CEC4B7]/92 backdrop-blur-md border-b border-stonebg-border transition-all">
+  <header class="sticky top-0 z-50 bg-[#CEC4B7]/95 backdrop-blur-md border-b border-stonebg-border transition-all">
     <div class="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between">
       
-      <!-- Brand Logo -->
-      <a href="#" class="flex items-center space-x-3 group">
-        <div class="w-10 h-10 rounded-full border border-ink-900/40 bg-stonebg-card flex items-center justify-center p-1.5 shadow-sm group-hover:scale-105 transition-transform">
-          <img src="assets/logo_icon.png" alt="Neuriva Logo" class="w-full h-full object-contain">
+      <!-- Brand Logo (Matches Axial Brain Illustration) -->
+      <a href="javascript:void(0)" onclick="navigateTo('overview')" class="flex items-center space-x-3.5 group">
+        <div class="w-11 h-11 rounded-xl border border-stonebg-border bg-stonebg-card flex items-center justify-center p-1.5 shadow-sm group-hover:border-accent-espresso transition-all overflow-hidden">
+          <img src="assets/neuriva_logo.png" alt="Neuriva Brain Logo" class="w-full h-full object-contain mix-blend-multiply group-hover:scale-105 transition-transform">
         </div>
         <div class="flex flex-col">
           <span class="font-serif text-2xl font-semibold tracking-tight text-ink-950">Neuriva</span>
@@ -106,551 +117,525 @@
         </div>
       </a>
 
-      <!-- Navigation Links -->
-      <nav class="hidden md:flex items-center space-x-8 text-sm font-medium text-ink-muted">
-        <a href="#about" class="hover:text-ink-950 transition-colors">About</a>
-        <a href="#features" class="hover:text-ink-950 transition-colors">How It Works</a>
-        <a href="#methodology" class="hover:text-ink-950 transition-colors">Methodology</a>
-        <a href="#workspace" class="hover:text-ink-950 transition-colors">Diagnostic Console</a>
+      <!-- Navigation Links (Page Switcher) -->
+      <nav class="hidden md:flex items-center space-x-2 text-sm font-medium">
+        <button onclick="navigateTo('overview')" id="nav-overview" class="nav-btn px-4 py-2 rounded-lg text-ink-950 bg-stonebg-card border border-stonebg-border transition-all">
+          Overview
+        </button>
+        <button onclick="navigateTo('how-it-works')" id="nav-how-it-works" class="nav-btn px-4 py-2 rounded-lg text-ink-muted hover:text-ink-950 transition-all">
+          How It Works
+        </button>
+        <button onclick="navigateTo('console')" id="nav-console" class="nav-btn px-4 py-2 rounded-lg text-ink-muted hover:text-ink-950 transition-all">
+          Diagnostic Console
+        </button>
+        <button onclick="navigateTo('methodology')" id="nav-methodology" class="nav-btn px-4 py-2 rounded-lg text-ink-muted hover:text-ink-950 transition-all">
+          Methodology
+        </button>
       </nav>
 
-      <!-- Engine Status & CTA -->
+      <!-- Engine Status & Primary Action Button -->
       <div class="flex items-center space-x-4">
         <div id="backend-status-badge" class="hidden sm:inline-flex items-center space-x-2 px-3 py-1.5 rounded-full bg-stonebg-card border border-stonebg-border text-xs font-medium text-ink-muted">
           <span id="backend-dot" class="w-2 h-2 rounded-full bg-emerald-600 animate-pulse"></span>
           <span id="backend-label">FastAPI Online</span>
         </div>
 
-        <a href="#workspace" class="inline-flex items-center justify-center px-5 py-2.5 rounded-lg bg-accent-espresso hover:bg-accent-hover text-stonebg-50 text-sm font-medium transition-all shadow-sm">
-          Start Triage <span class="ml-1.5 font-sans">→</span>
-        </a>
+        <button onclick="navigateTo('console')" class="inline-flex items-center justify-center px-5 py-2.5 rounded-lg bg-accent-espresso hover:bg-accent-hover text-stonebg-50 text-sm font-medium transition-all shadow-sm">
+          Start Neuriva <span class="ml-1.5 font-sans">→</span>
+        </button>
       </div>
 
     </div>
   </header>
 
 
-  <!-- ==================== HERO SECTION ==================== -->
-  <section class="relative pt-12 pb-20 md:pt-18 md:pb-26 border-b border-stonebg-border">
-    <div class="max-w-7xl mx-auto px-6 grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-8 items-center">
+  <!-- ==================== MAIN CONTENT (PAGE ROUTER) ==================== -->
+  <main class="flex-grow">
+
+    <!-- ==================== PAGE 1: OVERVIEW ==================== -->
+    <div id="page-overview" class="page-view active">
       
-      <!-- Left Hero Column -->
-      <div class="lg:col-span-7 flex flex-col items-start pr-0 lg:pr-6">
-        <div class="inline-flex items-center space-x-2 px-3 py-1 rounded-full bg-stonebg-card border border-stonebg-border mb-5">
-          <span class="w-2 h-2 rounded-full bg-accent-warm"></span>
-          <span class="tracking-widest text-[11px] font-semibold uppercase text-ink-muted font-mono">
-            Neuriva &bull; Acute Ischemic Stroke Triage
-          </span>
-        </div>
-        
-        <h1 class="font-serif text-5xl sm:text-6xl lg:text-7xl font-normal tracking-tight text-ink-950 leading-[1.08] mb-6">
-          Rapid Detection.<br>
-          <span class="italic font-serif">Preserved Brain.</span>
-        </h1>
-
-        <p class="text-lg text-ink-muted leading-relaxed max-w-xl mb-9 font-normal">
-          Neuriva delivers clinical-grade automated ASPECTS scoring to emergency stroke triage — offline, fully explainable, and radiologist-verified.
-        </p>
-
-        <div class="flex flex-wrap items-center gap-4">
-          <a href="#workspace" class="inline-flex items-center justify-center px-7 py-3.5 rounded-lg bg-accent-espresso hover:bg-accent-hover text-stonebg-50 text-base font-medium transition-all shadow-sm">
-            Start Diagnosis <span class="ml-2">→</span>
-          </a>
-          <a href="#features" class="inline-flex items-center justify-center px-7 py-3.5 rounded-lg bg-stonebg-card hover:bg-stonebg-cardlight border border-stonebg-border text-ink-950 text-base font-medium transition-all">
-            Explore Capabilities
-          </a>
-        </div>
-      </div>
-
-      <!-- Right Hero Showcase Card (Displays New Axial Brain Image) -->
-      <div class="lg:col-span-5 flex justify-center lg:justify-end">
-        <div class="w-full max-w-md bg-stonebg-card rounded-2xl p-7 border border-stonebg-border soft-shadow-lg flex flex-col items-center text-center">
+      <!-- Hero Section -->
+      <section class="pt-12 pb-20 md:pt-16 md:pb-24 border-b border-stonebg-border">
+        <div class="max-w-7xl mx-auto px-6 grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-8 items-center">
           
-          <!-- High-Res Anatomical Brain Illustration (Seamless Blend) -->
-          <div class="w-full aspect-[4/3] flex items-center justify-center p-2 group mb-2">
-            <img src="assets/brain_axial.jpg" alt="Neuriva Axial Brain Template" class="w-full h-full object-contain mix-blend-multiply group-hover:scale-105 transition-transform duration-500">
-          </div>
-
-          <!-- Centered Anatomical Level Tag -->
-          <div class="inline-flex items-center space-x-1.5 px-3 py-1 rounded-full bg-stonebg-cardlight border border-stonebg-border text-[11px] font-mono text-ink-muted mb-4 shadow-sm">
-            <span class="w-1.5 h-1.5 rounded-full bg-accent-warm"></span>
-            <span>Ganglionic Axial Level &bull; Z = 28</span>
-          </div>
-
-          <h3 class="font-serif text-2xl font-semibold text-ink-950 mb-2">
-            Non-Contrast CT Analysis
-          </h3>
-          
-          <p class="text-xs text-ink-muted leading-relaxed mb-5 font-normal">
-            Automated detection of MCA hypodensity, dynamic silhouette midline registration, and 10-point ASPECTS scoring with zero cloud latency.
-          </p>
-
-          <div class="inline-flex items-center space-x-2 px-3.5 py-1.5 rounded-full bg-stonebg-cardlight border border-stonebg-border text-xs font-mono text-ink-muted">
-            <span class="w-2 h-2 rounded-full bg-emerald-600"></span>
-            <span>Neuriva Vision Engine Ready</span>
-          </div>
-
-        </div>
-      </div>
-
-    </div>
-  </section>
-
-
-  <!-- ==================== WHAT NEURIVA ANALYSES (GRID) ==================== -->
-  <section id="features" class="py-20 md:py-26 border-b border-stonebg-border">
-    <div class="max-w-7xl mx-auto px-6">
-      
-      <div class="text-center max-w-2xl mx-auto mb-16">
-        <h2 class="font-serif text-4xl sm:text-5xl font-normal text-ink-950 mb-3 tracking-tight">
-          What Neuriva Analyses
-        </h2>
-        <p class="text-ink-muted text-base sm:text-lg font-normal">
-          Comprehensive, explainable clinical features engineered for emergency ER stroke triage
-        </p>
-      </div>
-
-      <!-- 6-Card Feature Grid (Low-Glare Twilight Stone Cards) -->
-      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        
-        <!-- Card 1 -->
-        <div class="bg-stonebg-card rounded-xl p-8 border border-stonebg-border soft-shadow hover:border-ink-800/40 transition-all flex flex-col">
-          <div class="w-10 h-10 rounded-lg bg-stonebg-cardlight border border-stonebg-border flex items-center justify-center text-ink-950 mb-5">
-            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.75">
-              <circle cx="12" cy="12" r="9"/><path d="M12 6v6l4 2"/>
-            </svg>
-          </div>
-          <h4 class="font-serif text-xl font-semibold text-ink-950 mb-2.5">
-            Parenchymal Isolation
-          </h4>
-          <p class="text-sm text-ink-muted leading-relaxed">
-            Calibrated dual-Otsu thresholding strips background air and dense cranial bone, isolating pure brain tissue without skull contamination.
-          </p>
-        </div>
-
-        <!-- Card 2 -->
-        <div class="bg-stonebg-card rounded-xl p-8 border border-stonebg-border soft-shadow hover:border-ink-800/40 transition-all flex flex-col">
-          <div class="w-10 h-10 rounded-lg bg-stonebg-cardlight border border-stonebg-border flex items-center justify-center text-ink-950 mb-5">
-            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.75">
-              <path d="M18 20V10M12 20V4M6 20v-6"/>
-            </svg>
-          </div>
-          <h4 class="font-serif text-xl font-semibold text-ink-950 mb-2.5">
-            Silhouette Midline Registration
-          </h4>
-          <p class="text-sm text-ink-muted leading-relaxed">
-            Dynamically locks onto the interhemispheric fissure via silhouette reflection search. Completely invariant to patient head tilt or horizontal offset.
-          </p>
-        </div>
-
-        <!-- Card 3 -->
-        <div class="bg-stonebg-card rounded-xl p-8 border border-stonebg-border soft-shadow hover:border-ink-800/40 transition-all flex flex-col">
-          <div class="w-10 h-10 rounded-lg bg-stonebg-cardlight border border-stonebg-border flex items-center justify-center text-ink-950 mb-5">
-            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.75">
-              <circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/>
-            </svg>
-          </div>
-          <h4 class="font-serif text-xl font-semibold text-ink-950 mb-2.5">
-            Contralateral Differencing
-          </h4>
-          <p class="text-sm text-ink-muted leading-relaxed">
-            Measures subtle hypodensity across mirrored hemispheres with an absolute noise floor, catching early ischemic cytotoxic edema.
-          </p>
-        </div>
-
-        <!-- Card 4 -->
-        <div class="bg-stonebg-card rounded-xl p-8 border border-stonebg-border soft-shadow hover:border-ink-800/40 transition-all flex flex-col">
-          <div class="w-10 h-10 rounded-lg bg-stonebg-cardlight border border-stonebg-border flex items-center justify-center text-ink-950 mb-5">
-            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.75">
-              <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20M4 4.5A2.5 2.5 0 0 1 6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15z"/>
-            </svg>
-          </div>
-          <h4 class="font-serif text-xl font-semibold text-ink-950 mb-2.5">
-            Topographic ASPECTS Scoring
-          </h4>
-          <p class="text-sm text-ink-muted leading-relaxed">
-            Conforms strictly to 10-point Alberta Stroke criteria. Deducts points only when regional parenchymal loss exceeds 5%.
-          </p>
-        </div>
-
-        <!-- Card 5 -->
-        <div class="bg-stonebg-card rounded-xl p-8 border border-stonebg-border soft-shadow hover:border-ink-800/40 transition-all flex flex-col">
-          <div class="w-10 h-10 rounded-lg bg-stonebg-cardlight border border-stonebg-border flex items-center justify-center text-ink-950 mb-5">
-            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.75">
-              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/>
-            </svg>
-          </div>
-          <h4 class="font-serif text-xl font-semibold text-ink-950 mb-2.5">
-            Explainable Mind Map Tree
-          </h4>
-          <p class="text-sm text-ink-muted leading-relaxed">
-            Hierarchical evidence breakdown for Deep Subcortical Core and Cortical Convexity with estimated Hounsfield Units and functional deficit notes.
-          </p>
-        </div>
-
-        <!-- Card 6 -->
-        <div class="bg-stonebg-card rounded-xl p-8 border border-stonebg-border soft-shadow hover:border-ink-800/40 transition-all flex flex-col">
-          <div class="w-10 h-10 rounded-lg bg-stonebg-cardlight border border-stonebg-border flex items-center justify-center text-ink-950 mb-5">
-            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.75">
-              <rect x="2" y="3" width="20" height="14" rx="2" ry="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/>
-            </svg>
-          </div>
-          <h4 class="font-serif text-xl font-semibold text-ink-950 mb-2.5">
-            100% Offline & DICOM Ready
-          </h4>
-          <p class="text-sm text-ink-muted leading-relaxed">
-            Runs locally on hospital machines with full 16-bit DICOM (.dcm) ingestion, true Hounsfield Unit scaling, and stroke windowing (WW=80, WL=40).
-          </p>
-        </div>
-
-      </div>
-
-    </div>
-  </section>
-
-
-  <!-- ==================== DIAGNOSTIC WORKSPACE & FORM ==================== -->
-  <section id="workspace" class="py-20 md:py-26 border-b border-stonebg-border">
-    <div class="max-w-7xl mx-auto px-6">
-      
-      <div class="mb-10">
-        <h2 class="font-serif text-4xl font-normal text-ink-950 mb-2">
-          Diagnostic Evaluation Console
-        </h2>
-        <p class="text-ink-muted text-sm">
-          Enter patient clinical metadata and upload an axial head CT slice or DICOM file.
-        </p>
-      </div>
-
-      <!-- Quick Preset Benchmark Bar -->
-      <div class="mb-8 p-4 rounded-xl bg-stonebg-card border border-stonebg-border flex flex-wrap items-center justify-between gap-4 soft-shadow">
-        <div class="flex items-center space-x-2">
-          <span class="text-xs font-mono font-semibold uppercase text-ink-muted">Clinical Benchmarks:</span>
-        </div>
-        <div class="flex flex-wrap items-center gap-2">
-          <button onclick="loadBenchmarkCase('m1')" class="px-3.5 py-1.5 rounded-lg bg-stonebg-cardlight hover:bg-stonebg-50 border border-stonebg-border text-xs font-medium text-ink-950 transition-colors">
-            #4092 Acute M1 Occlusion (Severe)
-          </button>
-          <button onclick="loadBenchmarkCase('focal')" class="px-3.5 py-1.5 rounded-lg bg-stonebg-cardlight hover:bg-stonebg-50 border border-stonebg-border text-xs font-medium text-ink-950 transition-colors">
-            #2104 Focal Basal Ganglia (Moderate)
-          </button>
-          <button onclick="loadBenchmarkCase('normal')" class="px-3.5 py-1.5 rounded-lg bg-stonebg-cardlight hover:bg-stonebg-50 border border-stonebg-border text-xs font-medium text-ink-950 transition-colors">
-            #0891 Normal Non-Ischemic (10/10)
-          </button>
-        </div>
-      </div>
-
-      <!-- Two-Card Form Grid -->
-      <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
-        
-        <!-- Left: Patient Information -->
-        <div class="bg-stonebg-card rounded-2xl p-8 border border-stonebg-border flex flex-col justify-between soft-shadow">
-          <div>
-            <h3 class="font-serif text-2xl font-semibold text-ink-950 mb-6">
-              Patient Information
-            </h3>
-
-            <div class="space-y-4">
-              <div>
-                <label class="block text-xs font-medium text-ink-950 mb-1.5">Patient Name *</label>
-                <input type="text" id="pat-name" value="Ramesh Kumar" class="w-full px-4 py-2.5 rounded-lg bg-stonebg-cardlight border border-stonebg-border text-sm text-ink-950 focus:outline-none focus:border-accent-espresso transition-colors">
-              </div>
-
-              <div class="grid grid-cols-2 gap-4">
-                <div>
-                  <label class="block text-xs font-medium text-ink-950 mb-1.5">Age *</label>
-                  <input type="number" id="pat-age" value="58" class="w-full px-4 py-2.5 rounded-lg bg-stonebg-cardlight border border-stonebg-border text-sm text-ink-950 focus:outline-none focus:border-accent-espresso transition-colors">
-                </div>
-                <div>
-                  <label class="block text-xs font-medium text-ink-950 mb-1.5">Time from Onset (hrs)</label>
-                  <input type="text" id="pat-onset" value="2.5 hrs" class="w-full px-4 py-2.5 rounded-lg bg-stonebg-cardlight border border-stonebg-border text-sm text-ink-950 focus:outline-none focus:border-accent-espresso transition-colors">
-                </div>
-              </div>
-
-              <div>
-                <label class="block text-xs font-medium text-ink-950 mb-1.5">Patient ID / Medical Record *</label>
-                <input type="text" id="pat-id" value="ER-2026-9042" class="w-full px-4 py-2.5 rounded-lg bg-stonebg-cardlight border border-stonebg-border text-sm font-mono text-ink-950 focus:outline-none focus:border-accent-espresso transition-colors">
-              </div>
-
-              <div>
-                <label class="block text-xs font-medium text-ink-950 mb-1.5">Emergency Triage Centre</label>
-                <input type="text" id="pat-center" value="Apex Regional Neuro-Trauma Unit" class="w-full px-4 py-2.5 rounded-lg bg-stonebg-cardlight border border-stonebg-border text-sm text-ink-950 focus:outline-none focus:border-accent-espresso transition-colors">
-              </div>
-
-              <div>
-                <label class="block text-xs font-medium text-ink-950 mb-2">Suspected Infarct Hemisphere *</label>
-                <div class="grid grid-cols-2 gap-3">
-                  <button type="button" id="btn-side-right" onclick="setHemisphere('right')" class="py-2.5 px-4 rounded-lg text-sm font-medium border border-accent-espresso bg-accent-espresso text-stonebg-50 transition-all">
-                    RIGHT (RH)
-                  </button>
-                  <button type="button" id="btn-side-left" onclick="setHemisphere('left')" class="py-2.5 px-4 rounded-lg text-sm font-medium border border-stonebg-border bg-stonebg-cardlight text-ink-muted hover:border-accent-espresso transition-all">
-                    LEFT (LH)
-                  </button>
-                </div>
-              </div>
-
-            </div>
-          </div>
-        </div>
-
-        <!-- Right: CT Image Upload & Dropzone -->
-        <div class="bg-stonebg-card rounded-2xl p-8 border border-stonebg-border flex flex-col justify-between soft-shadow">
-          <div>
-            <h3 class="font-serif text-2xl font-semibold text-ink-950 mb-6">
-              NCCT Image Upload
-            </h3>
-
-            <!-- Dropzone -->
-            <div id="drop-area" class="border-2 border-dashed border-stonebg-border rounded-xl p-8 text-center bg-stonebg-cardlight/80 hover:bg-stonebg-cardlight hover:border-accent-espresso transition-all cursor-pointer flex flex-col items-center justify-center">
-              <input type="file" id="file-input" accept=".dcm,image/png,image/jpeg,image/jpg" class="hidden">
-              
-              <div class="w-14 h-14 rounded-full bg-stonebg-card border border-stonebg-border flex items-center justify-center text-ink-950 mb-4 shadow-sm">
-                <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5">
-                  <circle cx="12" cy="12" r="9"/>
-                  <circle cx="12" cy="12" r="4"/>
-                  <path d="M12 3v2M12 19v2M3 12h2M19 12h2"/>
-                </svg>
-              </div>
-
-              <p class="font-serif text-lg font-medium text-ink-950 mb-1">
-                Drop axial brain CT image here
-              </p>
-              <p class="text-xs text-ink-muted mb-4">or click to browse from device</p>
-
-              <span class="inline-flex px-4 py-2 rounded-lg bg-stonebg-card border border-stonebg-border text-xs font-medium text-ink-950 hover:bg-stonebg-50 transition-colors">
-                Browse Files
+          <!-- Left Hero Column -->
+          <div class="lg:col-span-7 flex flex-col items-start pr-0 lg:pr-6">
+            <div class="inline-flex items-center space-x-2 px-3.5 py-1 rounded-full bg-stonebg-card border border-stonebg-border mb-6">
+              <span class="w-2 h-2 rounded-full bg-accent-warm"></span>
+              <span class="tracking-widest text-[11px] font-semibold uppercase text-ink-muted font-mono">
+                Neuriva &bull; Acute Ischemic Stroke Triage
               </span>
-
-              <p class="text-[11px] font-mono text-ink-muted mt-4">
-                Accepted: DICOM (.dcm), PNG, JPG &bull; Max 50 MB
-              </p>
             </div>
+            
+            <h1 class="font-serif text-5xl sm:text-6xl lg:text-7xl font-normal tracking-tight text-ink-950 leading-[1.08] mb-6">
+              Rapid Detection.<br>
+              <span class="italic font-serif">Preserved Brain.</span>
+            </h1>
 
-            <!-- Capture Guidance Box -->
-            <div class="mt-6 p-4 rounded-xl bg-stonebg-cardlight border border-stonebg-border text-xs text-ink-muted space-y-1">
-              <span class="font-semibold uppercase tracking-wider font-mono text-[10px] text-ink-950 block mb-1">Capture Guidance:</span>
-              <p>&bull; Select the axial slice at the level of the basal ganglia and internal capsule.</p>
-              <p>&bull; Stroke window preset: Width 80 HU, Level 40 HU.</p>
-              <p>&bull; Real 16-bit DICOM (.dcm) files are ingested with true RescaleSlope calibration.</p>
+            <p class="text-lg text-ink-muted leading-relaxed max-w-xl mb-9 font-normal">
+              Neuriva delivers clinical-grade automated ASPECTS scoring to emergency stroke triage — offline, fully explainable, and radiologist-verified.
+            </p>
+
+            <div class="flex flex-wrap items-center gap-4">
+              <button onclick="navigateTo('console')" class="inline-flex items-center justify-center px-7 py-3.5 rounded-lg bg-accent-espresso hover:bg-accent-hover text-stonebg-50 text-base font-medium transition-all shadow-sm">
+                Start Neuriva <span class="ml-2">→</span>
+              </button>
+              <button onclick="navigateTo('how-it-works')" class="inline-flex items-center justify-center px-7 py-3.5 rounded-lg bg-stonebg-card hover:bg-stonebg-cardlight border border-stonebg-border text-ink-950 text-base font-medium transition-all">
+                Explore Capabilities
+              </button>
             </div>
           </div>
+
+          <!-- Right Hero Showcase Card -->
+          <div class="lg:col-span-5 flex justify-center lg:justify-end">
+            <div class="w-full max-w-md bg-stonebg-card rounded-2xl p-8 border border-stonebg-border soft-shadow-lg flex flex-col items-center text-center">
+              
+              <!-- High-Res Anatomical Brain Illustration (Seamless Blend) -->
+              <div class="w-full aspect-[4/3] flex items-center justify-center p-2 group mb-3">
+                <img src="assets/brain_axial.jpg" alt="Neuriva Axial Brain Template" class="w-full h-full object-contain mix-blend-multiply group-hover:scale-105 transition-transform duration-500">
+              </div>
+
+              <!-- Centered Anatomical Level Tag -->
+              <div class="inline-flex items-center space-x-1.5 px-3.5 py-1 rounded-full bg-stonebg-cardlight border border-stonebg-border text-[11px] font-mono text-ink-muted mb-4 shadow-sm">
+                <span class="w-1.5 h-1.5 rounded-full bg-accent-warm"></span>
+                <span>Ganglionic Axial Level &bull; Z = 28</span>
+              </div>
+
+              <h3 class="font-serif text-2xl font-semibold text-ink-950 mb-2">
+                Non-Contrast CT Analysis
+              </h3>
+              
+              <p class="text-xs text-ink-muted leading-relaxed mb-5 font-normal">
+                Automated detection of MCA hypodensity, dynamic silhouette midline registration, and 10-point ASPECTS scoring with zero cloud latency.
+              </p>
+
+              <div class="inline-flex items-center space-x-2 px-3.5 py-1.5 rounded-full bg-stonebg-cardlight border border-stonebg-border text-xs font-mono text-ink-muted">
+                <span class="w-2 h-2 rounded-full bg-emerald-600"></span>
+                <span>Neuriva Vision Engine Ready</span>
+              </div>
+
+            </div>
+          </div>
+
         </div>
+      </section>
 
-      </div>
-
-      <!-- Action Button -->
-      <div class="text-center">
-        <button id="btn-run-analysis" onclick="runAnalysis()" class="w-full py-4 rounded-xl bg-accent-espresso hover:bg-accent-hover text-stonebg-50 text-lg font-medium transition-all shadow-md flex items-center justify-center space-x-2">
-          <span>Run ASPECTS Triage & Generate Report</span>
-          <span>→</span>
-        </button>
-      </div>
+      <!-- Key Clinical Metrics Banner -->
+      <section class="py-16 border-b border-stonebg-border bg-stonebg-card/40">
+        <div class="max-w-7xl mx-auto px-6 grid grid-cols-2 md:grid-cols-4 gap-8 text-center">
+          <div class="p-6 rounded-xl bg-stonebg-card border border-stonebg-border soft-shadow">
+            <div class="font-serif text-4xl font-normal text-ink-950 mb-1">10 / 10</div>
+            <div class="text-xs font-mono uppercase tracking-wider text-ink-muted">ASPECTS Territories</div>
+          </div>
+          <div class="p-6 rounded-xl bg-stonebg-card border border-stonebg-border soft-shadow">
+            <div class="font-serif text-4xl font-normal text-ink-950 mb-1">&lt; 150ms</div>
+            <div class="text-xs font-mono uppercase tracking-wider text-ink-muted">Inference Latency</div>
+          </div>
+          <div class="p-6 rounded-xl bg-stonebg-card border border-stonebg-border soft-shadow">
+            <div class="font-serif text-4xl font-normal text-ink-950 mb-1">16-bit</div>
+            <div class="text-xs font-mono uppercase tracking-wider text-ink-muted">DICOM Native Pipeline</div>
+          </div>
+          <div class="p-6 rounded-xl bg-stonebg-card border border-stonebg-border soft-shadow">
+            <div class="font-serif text-4xl font-normal text-ink-950 mb-1">100%</div>
+            <div class="text-xs font-mono uppercase tracking-wider text-ink-muted">Offline Operation</div>
+          </div>
+        </div>
+      </section>
 
     </div>
-  </section>
 
 
-  <!-- ==================== RESULTS CONSOLE ==================== -->
-  <section id="results-console" class="py-20 border-b border-stonebg-border hidden">
-    <div class="max-w-7xl mx-auto px-6">
-      
-      <!-- Section Header -->
-      <div class="flex flex-wrap items-center justify-between gap-4 mb-8">
-        <div>
-          <span class="text-xs font-mono uppercase tracking-wider text-ink-muted block mb-1">Evaluation Complete</span>
-          <h2 class="font-serif text-3xl sm:text-4xl font-normal text-ink-950">Diagnostic Triage Summary</h2>
-        </div>
-        <div class="flex items-center space-x-3">
-          <button onclick="window.print()" class="px-4 py-2 rounded-lg bg-stonebg-card border border-stonebg-border text-xs font-medium text-ink-950 hover:bg-stonebg-cardlight transition-colors flex items-center space-x-2">
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M6 9V2h12v7M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
-            <span>Print Report</span>
-          </button>
-        </div>
-      </div>
-
-      <!-- Grid: Left CT Viewport, Right Score & Mind Map Tree -->
-      <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
-        
-        <!-- Left: CT Viewport (5 Cols) -->
-        <div class="lg:col-span-5 bg-stonebg-card rounded-2xl p-6 border border-stonebg-border soft-shadow">
-          <div class="flex items-center justify-between mb-4">
-            <h4 class="font-serif text-lg font-semibold text-ink-950">PACS Viewport</h4>
-            <span id="res-midline-badge" class="text-xs font-mono px-2.5 py-1 rounded bg-stonebg-cardlight text-ink-muted border border-stonebg-border">
-              Midline x=256
-            </span>
-          </div>
-
-          <!-- Canvas Display -->
-          <div class="relative w-full aspect-square bg-black rounded-xl overflow-hidden flex items-center justify-center border border-stonebg-border shadow-inner">
-            <canvas id="ct-canvas" width="512" height="512" class="w-full h-full object-contain"></canvas>
-            
-            <!-- HUD Overlays -->
-            <div class="absolute top-2 left-2 text-[10px] font-mono text-white/90 bg-black/60 px-2 py-0.5 rounded backdrop-blur-sm">
-              WW: 80 | WL: 40
-            </div>
-            <div id="hud-side" class="absolute top-2 right-2 text-[10px] font-mono text-white/90 bg-black/60 px-2 py-0.5 rounded backdrop-blur-sm">
-              RH (Right)
-            </div>
-          </div>
-
-          <!-- Viewport Controls -->
-          <div class="mt-4 pt-4 border-t border-stonebg-border space-y-3">
-            <div class="flex items-center justify-between text-xs text-ink-muted">
-              <span>Display Overlays:</span>
-              <div class="space-x-3">
-                <label class="inline-flex items-center cursor-pointer">
-                  <input type="checkbox" id="toggle-regions" checked onchange="renderViewport()" class="rounded text-accent-espresso focus:ring-0 mr-1.5">
-                  Territories
-                </label>
-                <label class="inline-flex items-center cursor-pointer">
-                  <input type="checkbox" id="toggle-lesion" checked onchange="renderViewport()" class="rounded text-accent-espresso focus:ring-0 mr-1.5">
-                  Lesion
-                </label>
-              </div>
-            </div>
-
-            <!-- Windowing Slider -->
-            <div>
-              <div class="flex justify-between text-[11px] font-mono text-ink-muted mb-1">
-                <span>Contrast Windowing (WW: 80)</span>
-                <span id="slider-val">80 HU</span>
-              </div>
-              <input type="range" id="contrast-slider" min="40" max="160" value="80" oninput="updateContrast(this.value)" class="w-full accent-accent-espresso">
-            </div>
-          </div>
-
-        </div>
-
-
-        <!-- Right: Scorecard & Anatomical Mind Map Tree (7 Cols) -->
-        <div class="lg:col-span-7 space-y-6">
+    <!-- ==================== PAGE 2: HOW IT WORKS ==================== -->
+    <div id="page-how-it-works" class="page-view">
+      <section class="py-16 md:py-24 border-b border-stonebg-border">
+        <div class="max-w-7xl mx-auto px-6">
           
-          <!-- ASPECTS Score Hero Card -->
-          <div class="bg-stonebg-card rounded-2xl p-8 border border-stonebg-border soft-shadow">
-            <div class="flex flex-wrap items-center justify-between gap-4 mb-4">
-              <div>
-                <span class="text-xs font-mono uppercase tracking-wider text-ink-muted block mb-1">Calculated Score</span>
-                <div class="flex items-baseline space-x-2">
-                  <span id="score-display" class="font-serif text-6xl font-normal text-ink-950">--</span>
-                  <span class="text-2xl text-ink-muted font-serif">/ 10</span>
-                </div>
-              </div>
-
-              <!-- Guardrail Pill -->
-              <div id="guardrail-badge" class="px-4 py-2 rounded-xl text-sm font-semibold border">
-                Awaiting Evaluation
-              </div>
-            </div>
-
-            <!-- Progress Bar -->
-            <div class="w-full h-2.5 bg-stonebg-cardlight rounded-full overflow-hidden mb-4">
-              <div id="score-bar" class="h-full bg-emerald-700 transition-all duration-700" style="width: 0%"></div>
-            </div>
-
-            <p id="guardrail-desc" class="text-sm text-ink-muted leading-relaxed">
-              Automated topographic evaluation based on quantitative tissue attenuation.
+          <div class="text-center max-w-2xl mx-auto mb-16">
+            <span class="text-xs font-mono uppercase tracking-wider text-ink-muted block mb-2">Algorithmic Architecture</span>
+            <h2 class="font-serif text-4xl sm:text-5xl font-normal text-ink-950 mb-3 tracking-tight">
+              What Neuriva Analyses
+            </h2>
+            <p class="text-ink-muted text-base sm:text-lg font-normal">
+              Comprehensive, explainable clinical features engineered for emergency ER stroke triage
             </p>
           </div>
 
-
-          <!-- ==================== EXPLAINABLE ANATOMICAL MIND MAP TREE ==================== -->
-          <div class="bg-stonebg-card rounded-2xl p-8 border border-stonebg-border soft-shadow">
-            <div class="flex items-center justify-between mb-6">
-              <div>
-                <h4 class="font-serif text-2xl font-semibold text-ink-950">Territorial Mind Map</h4>
-                <p class="text-xs text-ink-muted mt-0.5">Hover or click any territory card to inspect its quantitative evidence.</p>
+          <!-- 6-Card Feature Grid -->
+          <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-16">
+            
+            <div class="bg-stonebg-card rounded-xl p-8 border border-stonebg-border soft-shadow hover:border-ink-800/40 transition-all flex flex-col">
+              <div class="w-10 h-10 rounded-lg bg-stonebg-cardlight border border-stonebg-border flex items-center justify-center text-ink-950 mb-5">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.75">
+                  <circle cx="12" cy="12" r="9"/><path d="M12 6v6l4 2"/>
+                </svg>
               </div>
-              <span class="text-xs font-mono text-ink-muted px-2.5 py-1 rounded bg-stonebg-cardlight border border-stonebg-border">7 Ganglionic Regions</span>
+              <h4 class="font-serif text-xl font-semibold text-ink-950 mb-2.5">
+                Parenchymal Isolation
+              </h4>
+              <p class="text-sm text-ink-muted leading-relaxed">
+                Calibrated dual-Otsu thresholding strips background air and dense cranial bone, isolating pure brain tissue without skull contamination.
+              </p>
             </div>
 
-            <!-- Tree Structure -->
-            <div class="space-y-6">
+            <div class="bg-stonebg-card rounded-xl p-8 border border-stonebg-border soft-shadow hover:border-ink-800/40 transition-all flex flex-col">
+              <div class="w-10 h-10 rounded-lg bg-stonebg-cardlight border border-stonebg-border flex items-center justify-center text-ink-950 mb-5">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.75">
+                  <path d="M18 20V10M12 20V4M6 20v-6"/>
+                </svg>
+              </div>
+              <h4 class="font-serif text-xl font-semibold text-ink-950 mb-2.5">
+                Silhouette Midline Registration
+              </h4>
+              <p class="text-sm text-ink-muted leading-relaxed">
+                Dynamically locks onto the interhemispheric fissure via silhouette reflection search. Completely invariant to patient head tilt or horizontal offset.
+              </p>
+            </div>
+
+            <div class="bg-stonebg-card rounded-xl p-8 border border-stonebg-border soft-shadow hover:border-ink-800/40 transition-all flex flex-col">
+              <div class="w-10 h-10 rounded-lg bg-stonebg-cardlight border border-stonebg-border flex items-center justify-center text-ink-950 mb-5">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.75">
+                  <circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+                </svg>
+              </div>
+              <h4 class="font-serif text-xl font-semibold text-ink-950 mb-2.5">
+                Contralateral Differencing
+              </h4>
+              <p class="text-sm text-ink-muted leading-relaxed">
+                Measures subtle hypodensity across mirrored hemispheres with an absolute noise floor, catching early ischemic cytotoxic edema.
+              </p>
+            </div>
+
+            <div class="bg-stonebg-card rounded-xl p-8 border border-stonebg-border soft-shadow hover:border-ink-800/40 transition-all flex flex-col">
+              <div class="w-10 h-10 rounded-lg bg-stonebg-cardlight border border-stonebg-border flex items-center justify-center text-ink-950 mb-5">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.75">
+                  <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20M4 4.5A2.5 2.5 0 0 1 6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15z"/>
+                </svg>
+              </div>
+              <h4 class="font-serif text-xl font-semibold text-ink-950 mb-2.5">
+                Topographic ASPECTS Scoring
+              </h4>
+              <p class="text-sm text-ink-muted leading-relaxed">
+                Conforms strictly to 10-point Alberta Stroke criteria. Deducts points only when regional parenchymal loss exceeds 5%.
+              </p>
+            </div>
+
+            <div class="bg-stonebg-card rounded-xl p-8 border border-stonebg-border soft-shadow hover:border-ink-800/40 transition-all flex flex-col">
+              <div class="w-10 h-10 rounded-lg bg-stonebg-cardlight border border-stonebg-border flex items-center justify-center text-ink-950 mb-5">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.75">
+                  <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/>
+                </svg>
+              </div>
+              <h4 class="font-serif text-xl font-semibold text-ink-950 mb-2.5">
+                Explainable Mind Map Tree
+              </h4>
+              <p class="text-sm text-ink-muted leading-relaxed">
+                Hierarchical evidence breakdown for Deep Subcortical Core and Cortical Convexity with estimated Hounsfield Units and functional deficit notes.
+              </p>
+            </div>
+
+            <div class="bg-stonebg-card rounded-xl p-8 border border-stonebg-border soft-shadow hover:border-ink-800/40 transition-all flex flex-col">
+              <div class="w-10 h-10 rounded-lg bg-stonebg-cardlight border border-stonebg-border flex items-center justify-center text-ink-950 mb-5">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.75">
+                  <rect x="2" y="3" width="20" height="14" rx="2" ry="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/>
+                </svg>
+              </div>
+              <h4 class="font-serif text-xl font-semibold text-ink-950 mb-2.5">
+                100% Offline & DICOM Ready
+              </h4>
+              <p class="text-sm text-ink-muted leading-relaxed">
+                Runs locally on hospital machines with full 16-bit DICOM (.dcm) ingestion, true Hounsfield Unit scaling, and stroke windowing (WW=80, WL=40).
+              </p>
+            </div>
+
+          </div>
+
+          <!-- Bottom Action -->
+          <div class="text-center">
+            <button onclick="navigateTo('console')" class="inline-flex items-center justify-center px-8 py-4 rounded-xl bg-accent-espresso hover:bg-accent-hover text-stonebg-50 text-base font-medium transition-all shadow-md">
+              Launch Diagnostic Console <span class="ml-2">→</span>
+            </button>
+          </div>
+
+        </div>
+      </section>
+    </div>
+
+
+    <!-- ==================== PAGE 3: DIAGNOSTIC CONSOLE ==================== -->
+    <div id="page-console" class="page-view">
+      <section class="py-12 md:py-16">
+        <div class="max-w-7xl mx-auto px-6">
+          
+          <div class="flex flex-wrap items-center justify-between gap-4 mb-8">
+            <div>
+              <span class="text-xs font-mono uppercase tracking-wider text-ink-muted block mb-1">Clinical Workstation</span>
+              <h2 class="font-serif text-3xl sm:text-4xl font-normal text-ink-950">Diagnostic Triage Console</h2>
+            </div>
+
+            <!-- Quick Benchmark Selector -->
+            <div class="flex flex-wrap items-center gap-2 p-2 rounded-xl bg-stonebg-card border border-stonebg-border">
+              <span class="text-[11px] font-mono uppercase text-ink-muted px-2">Presets:</span>
+              <button onclick="loadBenchmarkCase('m1')" class="px-3 py-1.5 rounded-lg bg-stonebg-cardlight hover:bg-stonebg-50 border border-stonebg-border text-xs font-medium text-ink-950 transition-colors">
+                #4092 Acute M1 (Severe)
+              </button>
+              <button onclick="loadBenchmarkCase('focal')" class="px-3 py-1.5 rounded-lg bg-stonebg-cardlight hover:bg-stonebg-50 border border-stonebg-border text-xs font-medium text-ink-950 transition-colors">
+                #2104 Focal BG (Moderate)
+              </button>
+              <button onclick="loadBenchmarkCase('normal')" class="px-3 py-1.5 rounded-lg bg-stonebg-cardlight hover:bg-stonebg-50 border border-stonebg-border text-xs font-medium text-ink-950 transition-colors">
+                #0891 Normal (10/10)
+              </button>
+            </div>
+          </div>
+
+          <!-- Input Stage: Patient Form + Upload Dropzone -->
+          <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-10">
+            
+            <!-- Patient Form -->
+            <div class="bg-stonebg-card rounded-2xl p-7 border border-stonebg-border soft-shadow">
+              <h3 class="font-serif text-2xl font-semibold text-ink-950 mb-5">Patient Information</h3>
+              <div class="space-y-4">
+                <div>
+                  <label class="block text-xs font-medium text-ink-950 mb-1">Patient Name *</label>
+                  <input type="text" id="pat-name" value="Ramesh Kumar" class="w-full px-4 py-2 rounded-lg bg-stonebg-cardlight border border-stonebg-border text-sm text-ink-950 focus:outline-none focus:border-accent-espresso">
+                </div>
+                <div class="grid grid-cols-2 gap-4">
+                  <div>
+                    <label class="block text-xs font-medium text-ink-950 mb-1">Age *</label>
+                    <input type="number" id="pat-age" value="58" class="w-full px-4 py-2 rounded-lg bg-stonebg-cardlight border border-stonebg-border text-sm text-ink-950 focus:outline-none focus:border-accent-espresso">
+                  </div>
+                  <div>
+                    <label class="block text-xs font-medium text-ink-950 mb-1">Time from Onset</label>
+                    <input type="text" id="pat-onset" value="2.5 hrs" class="w-full px-4 py-2 rounded-lg bg-stonebg-cardlight border border-stonebg-border text-sm text-ink-950 focus:outline-none focus:border-accent-espresso">
+                  </div>
+                </div>
+                <div>
+                  <label class="block text-xs font-medium text-ink-950 mb-1">Patient Record ID *</label>
+                  <input type="text" id="pat-id" value="ER-2026-9042" class="w-full px-4 py-2 rounded-lg bg-stonebg-cardlight border border-stonebg-border text-sm font-mono text-ink-950 focus:outline-none focus:border-accent-espresso">
+                </div>
+                <div>
+                  <label class="block text-xs font-medium text-ink-950 mb-1.5">Suspected Infarct Hemisphere *</label>
+                  <div class="grid grid-cols-2 gap-3">
+                    <button type="button" id="btn-side-right" onclick="setHemisphere('right')" class="py-2 px-4 rounded-lg text-xs font-medium border border-accent-espresso bg-accent-espresso text-stonebg-50 transition-all">
+                      RIGHT (RH)
+                    </button>
+                    <button type="button" id="btn-side-left" onclick="setHemisphere('left')" class="py-2 px-4 rounded-lg text-xs font-medium border border-stonebg-border bg-stonebg-cardlight text-ink-muted hover:border-accent-espresso transition-all">
+                      LEFT (LH)
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Upload Dropzone -->
+            <div class="bg-stonebg-card rounded-2xl p-7 border border-stonebg-border soft-shadow flex flex-col justify-between">
+              <h3 class="font-serif text-2xl font-semibold text-ink-950 mb-4">NCCT Scan Ingestion</h3>
               
-              <!-- 1. Deep Subcortical Core Group -->
-              <div>
-                <div class="flex items-center space-x-2 mb-3">
-                  <span class="w-2 h-2 rounded-full bg-accent-espresso"></span>
-                  <span class="text-xs font-bold uppercase tracking-wider text-ink-950 font-mono">Deep Subcortical Core</span>
+              <div id="drop-area" class="border-2 border-dashed border-stonebg-border rounded-xl p-7 text-center bg-stonebg-cardlight/80 hover:bg-stonebg-cardlight hover:border-accent-espresso transition-all cursor-pointer flex flex-col items-center justify-center">
+                <input type="file" id="file-input" accept=".dcm,image/png,image/jpeg,image/jpg" class="hidden">
+                <div class="w-12 h-12 rounded-full bg-stonebg-card border border-stonebg-border flex items-center justify-center text-ink-950 mb-3 shadow-sm">
+                  <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="4"/><path d="M12 3v2M12 19v2M3 12h2M19 12h2"/></svg>
                 </div>
-                <div id="group-deep" class="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                  <!-- Injected via JavaScript -->
-                </div>
+                <p class="font-serif text-base font-medium text-ink-950 mb-0.5">Drop brain CT image or DICOM here</p>
+                <p class="text-xs text-ink-muted mb-3">or click to browse local files</p>
+                <span class="inline-flex px-3.5 py-1.5 rounded-lg bg-stonebg-card border border-stonebg-border text-xs font-medium text-ink-950 hover:bg-stonebg-50 transition-colors">
+                  Browse Files
+                </span>
+                <p class="text-[10px] font-mono text-ink-muted mt-3">Accepted: DICOM (.dcm), PNG, JPG &bull; Max 50 MB</p>
               </div>
 
-              <!-- 2. Cortical Convexity Group -->
-              <div class="pt-4 border-t border-stonebg-border">
-                <div class="flex items-center space-x-2 mb-3">
-                  <span class="w-2 h-2 rounded-full bg-accent-espresso"></span>
-                  <span class="text-xs font-bold uppercase tracking-wider text-ink-950 font-mono">Cortical Convexity (MCA Ribbons)</span>
-                </div>
-                <div id="group-cortical" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-                  <!-- Injected via JavaScript -->
-                </div>
+              <div class="mt-4 p-3 rounded-xl bg-stonebg-cardlight border border-stonebg-border text-[11px] text-ink-muted space-y-0.5">
+                <span class="font-semibold uppercase tracking-wider font-mono text-[9px] text-ink-950 block">Capture Preset:</span>
+                <p>&bull; Stroke windowing: WW=80, WL=40 HU. 16-bit DICOM calibrated automatically.</p>
               </div>
-
             </div>
 
-            <!-- Detail Drawer for Hover/Click -->
-            <div id="node-inspector" class="mt-6 p-4 rounded-xl bg-stonebg-cardlight border border-stonebg-border text-xs text-ink-muted transition-all">
-              <span class="font-semibold text-ink-950 block mb-1" id="insp-title">Select or hover a region above to inspect quantitative evidence.</span>
-              <p id="insp-body" class="leading-relaxed">Shows volumetric overlap ratio, estimated Hounsfield attenuation (edema vs normal), and clinical functional impact.</p>
+          </div>
+
+          <div class="text-center mb-12">
+            <button id="btn-run-analysis" onclick="runAnalysis()" class="w-full py-3.5 rounded-xl bg-accent-espresso hover:bg-accent-hover text-stonebg-50 text-base font-medium transition-all shadow-md flex items-center justify-center space-x-2">
+              <span>Run ASPECTS Triage & Generate Evaluation</span>
+              <span>→</span>
+            </button>
+          </div>
+
+          <!-- Results Stage: PACS Viewport + Mind Map Tree -->
+          <div id="results-console" class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start pt-8 border-t border-stonebg-border">
+            
+            <!-- Left: Viewport (5 Cols) -->
+            <div class="lg:col-span-5 bg-stonebg-card rounded-2xl p-6 border border-stonebg-border soft-shadow">
+              <div class="flex items-center justify-between mb-4">
+                <h4 class="font-serif text-lg font-semibold text-ink-950">PACS Viewport</h4>
+                <span id="res-midline-badge" class="text-xs font-mono px-2.5 py-1 rounded bg-stonebg-cardlight text-ink-muted border border-stonebg-border">
+                  Midline x=256
+                </span>
+              </div>
+
+              <div class="relative w-full aspect-square bg-black rounded-xl overflow-hidden flex items-center justify-center border border-stonebg-border shadow-inner">
+                <canvas id="ct-canvas" width="512" height="512" class="w-full h-full object-contain"></canvas>
+                <div class="absolute top-2 left-2 text-[10px] font-mono text-white/90 bg-black/60 px-2 py-0.5 rounded backdrop-blur-sm">
+                  WW: 80 | WL: 40
+                </div>
+                <div id="hud-side" class="absolute top-2 right-2 text-[10px] font-mono text-white/90 bg-black/60 px-2 py-0.5 rounded backdrop-blur-sm">
+                  RH (Right)
+                </div>
+              </div>
+
+              <div class="mt-4 pt-4 border-t border-stonebg-border space-y-3">
+                <div class="flex items-center justify-between text-xs text-ink-muted">
+                  <span>Display Overlays:</span>
+                  <div class="space-x-3">
+                    <label class="inline-flex items-center cursor-pointer">
+                      <input type="checkbox" id="toggle-regions" checked onchange="renderViewport()" class="rounded text-accent-espresso mr-1.5">
+                      Territories
+                    </label>
+                    <label class="inline-flex items-center cursor-pointer">
+                      <input type="checkbox" id="toggle-lesion" checked onchange="renderViewport()" class="rounded text-accent-espresso mr-1.5">
+                      Lesion
+                    </label>
+                  </div>
+                </div>
+
+                <div>
+                  <div class="flex justify-between text-[11px] font-mono text-ink-muted mb-1">
+                    <span>Contrast Windowing (WW: 80)</span>
+                    <span id="slider-val">80 HU</span>
+                  </div>
+                  <input type="range" id="contrast-slider" min="40" max="160" value="80" oninput="updateContrast(this.value)" class="w-full accent-accent-espresso">
+                </div>
+              </div>
+            </div>
+
+            <!-- Right: ASPECTS Score & Mind Map (7 Cols) -->
+            <div class="lg:col-span-7 space-y-6">
+              
+              <!-- ASPECTS Score Hero Card -->
+              <div class="bg-stonebg-card rounded-2xl p-7 border border-stonebg-border soft-shadow">
+                <div class="flex flex-wrap items-center justify-between gap-4 mb-3">
+                  <div>
+                    <span class="text-xs font-mono uppercase tracking-wider text-ink-muted block mb-1">Calculated ASPECTS</span>
+                    <div class="flex items-baseline space-x-2">
+                      <span id="score-display" class="font-serif text-6xl font-normal text-ink-950">--</span>
+                      <span class="text-2xl text-ink-muted font-serif">/ 10</span>
+                    </div>
+                  </div>
+
+                  <div id="guardrail-badge" class="px-4 py-2 rounded-xl text-sm font-semibold border">
+                    Awaiting Evaluation
+                  </div>
+                </div>
+
+                <div class="w-full h-2.5 bg-stonebg-cardlight rounded-full overflow-hidden mb-3">
+                  <div id="score-bar" class="h-full bg-emerald-700 transition-all duration-700" style="width: 0%"></div>
+                </div>
+
+                <p id="guardrail-desc" class="text-xs text-ink-muted leading-relaxed">
+                  Automated topographic evaluation based on quantitative tissue attenuation.
+                </p>
+              </div>
+
+              <!-- Territorial Mind Map Tree -->
+              <div class="bg-stonebg-card rounded-2xl p-7 border border-stonebg-border soft-shadow">
+                <div class="flex items-center justify-between mb-5">
+                  <div>
+                    <h4 class="font-serif text-2xl font-semibold text-ink-950">Territorial Mind Map</h4>
+                    <p class="text-xs text-ink-muted">Hover or click any territory to inspect volumetric evidence.</p>
+                  </div>
+                  <button onclick="window.print()" class="px-3 py-1.5 rounded-lg bg-stonebg-cardlight border border-stonebg-border text-xs font-medium text-ink-950 hover:bg-stonebg-50 transition-colors flex items-center space-x-1.5">
+                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M6 9V2h12v7M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
+                    <span>Print</span>
+                  </button>
+                </div>
+
+                <div class="space-y-5">
+                  <div>
+                    <div class="flex items-center space-x-2 mb-2.5">
+                      <span class="w-2 h-2 rounded-full bg-accent-espresso"></span>
+                      <span class="text-xs font-bold uppercase tracking-wider text-ink-950 font-mono">Deep Subcortical Core</span>
+                    </div>
+                    <div id="group-deep" class="grid grid-cols-1 sm:grid-cols-3 gap-3"></div>
+                  </div>
+
+                  <div class="pt-4 border-t border-stonebg-border">
+                    <div class="flex items-center space-x-2 mb-2.5">
+                      <span class="w-2 h-2 rounded-full bg-accent-espresso"></span>
+                      <span class="text-xs font-bold uppercase tracking-wider text-ink-950 font-mono">Cortical Convexity (MCA Ribbons)</span>
+                    </div>
+                    <div id="group-cortical" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3"></div>
+                  </div>
+                </div>
+
+                <div id="node-inspector" class="mt-5 p-3.5 rounded-xl bg-stonebg-cardlight border border-stonebg-border text-xs text-ink-muted">
+                  <span class="font-semibold text-ink-950 block mb-1" id="insp-title">Select or hover a territory above.</span>
+                  <p id="insp-body" class="leading-relaxed">Displays tissue loss %, estimated Hounsfield attenuation (edema vs. normal), and anatomical landmark.</p>
+                </div>
+              </div>
+
             </div>
 
           </div>
 
         </div>
-
-      </div>
-
+      </section>
     </div>
-  </section>
 
 
-  <!-- ==================== METHODOLOGY & SCIENTIFIC CITATIONS ==================== -->
-  <section id="methodology" class="py-20 border-b border-stonebg-border">
-    <div class="max-w-7xl mx-auto px-6">
-      
-      <div class="max-w-2xl mb-12">
-        <span class="text-xs font-mono uppercase tracking-wider text-ink-muted block mb-1">Scientific Foundations</span>
-        <h3 class="font-serif text-3xl font-normal text-ink-950">Clinical Evidence & Guideline Alignment</h3>
-      </div>
+    <!-- ==================== PAGE 4: METHODOLOGY ==================== -->
+    <div id="page-methodology" class="page-view">
+      <section class="py-16 md:py-24 border-b border-stonebg-border">
+        <div class="max-w-7xl mx-auto px-6">
+          
+          <div class="max-w-2xl mb-12">
+            <span class="text-xs font-mono uppercase tracking-wider text-ink-muted block mb-2">Scientific Foundations</span>
+            <h2 class="font-serif text-4xl font-normal text-ink-950 mb-3">Clinical Evidence & Guideline Alignment</h2>
+            <p class="text-ink-muted text-base">Neuriva is designed in strict adherence to published stroke imaging literature and clinical trial protocols.</p>
+          </div>
 
-      <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
-        <div class="p-6 rounded-xl bg-stonebg-card border border-stonebg-border soft-shadow">
-          <span class="text-xs font-mono text-ink-muted block mb-2">Nature Scientific Data (2024)</span>
-          <h4 class="font-serif text-lg font-semibold text-ink-950 mb-2">ASPECTS-281 NCCT Atlas</h4>
-          <p class="text-xs text-ink-muted leading-relaxed">
-            Standardized multi-cohort anatomical templates across 281 patients for age-stratified MCA territory boundary demarcation.
-          </p>
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-8 mb-16">
+            <div class="p-8 rounded-xl bg-stonebg-card border border-stonebg-border soft-shadow">
+              <span class="text-xs font-mono text-ink-muted block mb-3">Nature Scientific Data (2024)</span>
+              <h4 class="font-serif text-xl font-semibold text-ink-950 mb-3">ASPECTS-281 NCCT Atlas</h4>
+              <p class="text-xs text-ink-muted leading-relaxed">
+                Standardized multi-cohort anatomical templates across 281 patients for age-stratified MCA territory boundary demarcation.
+              </p>
+            </div>
+
+            <div class="p-8 rounded-xl bg-stonebg-card border border-stonebg-border soft-shadow">
+              <span class="text-xs font-mono text-ink-muted block mb-3">MR CLEAN Registry Trial</span>
+              <h4 class="font-serif text-xl font-semibold text-ink-950 mb-3">Automated Triage Concordance</h4>
+              <p class="text-xs text-ink-muted leading-relaxed">
+                Matches expert neuroradiologist consensus scoring with established intraclass correlation (ICC ~0.71) in acute window evaluation.
+              </p>
+            </div>
+
+            <div class="p-8 rounded-xl bg-stonebg-card border border-stonebg-border soft-shadow">
+              <span class="text-xs font-mono text-ink-muted block mb-3">AHA / ASA Guidelines</span>
+              <h4 class="font-serif text-xl font-semibold text-ink-950 mb-3">DAWN & DEFUSE-3 Windows</h4>
+              <p class="text-xs text-ink-muted leading-relaxed">
+                Non-prescriptive decision support for mechanical thrombectomy qualification in patients presenting within extended 6 to 24-hour windows.
+              </p>
+            </div>
+          </div>
+
+          <div class="p-6 rounded-2xl bg-stonebg-card border border-stonebg-border text-xs text-ink-muted text-center max-w-3xl mx-auto">
+            <strong class="text-ink-950 font-serif text-base block mb-1">Observational Clinical Decision Support Protocol</strong>
+            Neuriva does not substitute for clinical judgment or autonomous medical diagnosis. All automated scores and visual contours require verification by a board-certified radiologist or stroke neurologist.
+          </div>
+
         </div>
-
-        <div class="p-6 rounded-xl bg-stonebg-card border border-stonebg-border soft-shadow">
-          <span class="text-xs font-mono text-ink-muted block mb-2">MR CLEAN Registry Trial</span>
-          <h4 class="font-serif text-lg font-semibold text-ink-950 mb-2">Automated Triage Concordance</h4>
-          <p class="text-xs text-ink-muted leading-relaxed">
-            Matches expert neuroradiologist consensus scoring with established intraclass correlation (ICC ~0.71) in acute window evaluation.
-          </p>
-        </div>
-
-        <div class="p-6 rounded-xl bg-stonebg-card border border-stonebg-border soft-shadow">
-          <span class="text-xs font-mono text-ink-muted block mb-2">AHA / ASA Guidelines</span>
-          <h4 class="font-serif text-lg font-semibold text-ink-950 mb-2">DAWN & DEFUSE-3 Windows</h4>
-          <p class="text-xs text-ink-muted leading-relaxed">
-            Non-prescriptive decision support for mechanical thrombectomy qualification in patients presenting within extended 6 to 24-hour windows.
-          </p>
-        </div>
-      </div>
-
+      </section>
     </div>
-  </section>
+
+  </main>
 
 
   <!-- ==================== FOOTER ==================== -->
   <footer class="py-12 bg-stonebg-card text-center text-xs text-ink-muted border-t border-stonebg-border">
     <div class="max-w-7xl mx-auto px-6 flex flex-col md:flex-row items-center justify-between gap-4">
-      <div class="flex items-center space-x-2">
+      <div class="flex items-center space-x-3">
+        <img src="assets/neuriva_logo.png" alt="Neuriva" class="w-5 h-5 object-contain mix-blend-multiply">
         <span class="font-serif font-semibold text-ink-950">Neuriva</span>
-        <span>&bull; Observational Clinical Decision Support Prototype</span>
+        <span>&bull; Explainable Stroke Triage</span>
       </div>
       <p>Not a substitute for clinical judgment. All automated scores require expert radiologist verification.</p>
     </div>
@@ -666,6 +651,7 @@
     };
 
     let state = {
+      currentPage: "overview",
       backendOnline: false,
       selectedHemisphere: "right",
       currentImage: null,
@@ -675,10 +661,47 @@
       highlightRegion: null,
     };
 
+    // --- Page Navigation Router ---
+    function navigateTo(pageId) {
+      state.currentPage = pageId;
+
+      // Update active view
+      document.querySelectorAll(".page-view").forEach(el => el.classList.remove("active"));
+      const target = document.getElementById("page-" + pageId);
+      if (target) target.classList.add("active");
+
+      // Update nav link styles
+      document.querySelectorAll(".nav-btn").forEach(btn => {
+        btn.className = "nav-btn px-4 py-2 rounded-lg text-ink-muted hover:text-ink-950 transition-all";
+      });
+      const activeBtn = document.getElementById("nav-" + pageId);
+      if (activeBtn) {
+        activeBtn.className = "nav-btn px-4 py-2 rounded-lg text-ink-950 bg-stonebg-card border border-stonebg-border transition-all";
+      }
+
+      window.location.hash = pageId;
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
+
     window.addEventListener("DOMContentLoaded", async () => {
+      // Check initial hash
+      const hash = window.location.hash.replace("#", "");
+      if (["overview", "how-it-works", "console", "methodology"].includes(hash)) {
+        navigateTo(hash);
+      } else {
+        navigateTo("overview");
+      }
+
       checkBackend();
       setupDropzone();
-      loadBenchmarkCase('m1');
+      loadBenchmarkCase('m1', false); // Pre-cache without navigating
+    });
+
+    window.addEventListener("hashchange", () => {
+      const hash = window.location.hash.replace("#", "");
+      if (["overview", "how-it-works", "console", "methodology"].includes(hash)) {
+        navigateTo(hash);
+      }
     });
 
     async function checkBackend() {
@@ -701,11 +724,11 @@
       const btnR = document.getElementById("btn-side-right");
       const btnL = document.getElementById("btn-side-left");
       if (side === "right") {
-        btnR.className = "py-2.5 px-4 rounded-lg text-sm font-medium border border-accent-espresso bg-accent-espresso text-stonebg-50 transition-all";
-        btnL.className = "py-2.5 px-4 rounded-lg text-sm font-medium border border-stonebg-border bg-stonebg-cardlight text-ink-muted hover:border-accent-espresso transition-all";
+        btnR.className = "py-2 px-4 rounded-lg text-xs font-medium border border-accent-espresso bg-accent-espresso text-stonebg-50 transition-all";
+        btnL.className = "py-2 px-4 rounded-lg text-xs font-medium border border-stonebg-border bg-stonebg-cardlight text-ink-muted hover:border-accent-espresso transition-all";
       } else {
-        btnL.className = "py-2.5 px-4 rounded-lg text-sm font-medium border border-accent-espresso bg-accent-espresso text-stonebg-50 transition-all";
-        btnR.className = "py-2.5 px-4 rounded-lg text-sm font-medium border border-stonebg-border bg-stonebg-cardlight text-ink-muted hover:border-accent-espresso transition-all";
+        btnL.className = "py-2 px-4 rounded-lg text-xs font-medium border border-accent-espresso bg-accent-espresso text-stonebg-50 transition-all";
+        btnR.className = "py-2 px-4 rounded-lg text-xs font-medium border border-stonebg-border bg-stonebg-cardlight text-ink-muted hover:border-accent-espresso transition-all";
       }
       document.getElementById("hud-side").textContent = side.toUpperCase() + (side === "right" ? " (Right)" : " (Left)");
       if (state.currentImage) runAnalysis();
@@ -735,6 +758,7 @@
         const img = new Image();
         img.onload = () => {
           state.currentImage = img;
+          navigateTo('console');
           runAnalysis();
         };
         img.src = e.target.result;
@@ -742,7 +766,8 @@
       reader.readAsDataURL(file);
     }
 
-    async function loadBenchmarkCase(cohortId) {
+    async function loadBenchmarkCase(cohortId, doNavigate = true) {
+      if (doNavigate) navigateTo('console');
       try {
         const res = await fetch(`${CONFIG.BENCHMARK_URL}/${cohortId}`);
         if (res.ok) {
@@ -751,17 +776,17 @@
           img.onload = () => {
             state.currentImage = img;
             state.currentFile = null;
-            runAnalysis();
+            if (doNavigate) runAnalysis();
           };
           img.src = `data:image/png;base64,${data.image_base64}`;
           return;
         }
       } catch (e) {
-        synthesizeCaseInBrowser(cohortId);
+        synthesizeCaseInBrowser(cohortId, doNavigate);
       }
     }
 
-    function synthesizeCaseInBrowser(cohortId) {
+    function synthesizeCaseInBrowser(cohortId, doNavigate = true) {
       const cvs = document.createElement("canvas");
       cvs.width = 512; cvs.height = 512;
       const ctx = cvs.getContext("2d");
@@ -782,16 +807,13 @@
       img.onload = () => {
         state.currentImage = img;
         state.currentFile = null;
-        runAnalysis();
+        if (doNavigate) runAnalysis();
       };
       img.src = cvs.toDataURL();
     }
 
     async function runAnalysis() {
       if (!state.currentImage) return;
-
-      document.getElementById("results-console").classList.remove("hidden");
-      document.getElementById("results-console").scrollIntoView({ behavior: 'smooth' });
 
       if (state.backendOnline) {
         try {
@@ -888,7 +910,7 @@
         const card = document.createElement("div");
         const isInfarcted = r.affected;
 
-        card.className = `p-4 rounded-xl border transition-all cursor-pointer ${
+        card.className = `p-3.5 rounded-xl border transition-all cursor-pointer ${
           isInfarcted 
             ? 'bg-status-infarctbg/60 border-status-infarct/40 hover:border-status-infarct shadow-sm' 
             : 'bg-stonebg-cardlight border-stonebg-border hover:border-accent-espresso/60 shadow-sm'
@@ -898,16 +920,16 @@
         card.onclick = () => inspectRegion(id, r);
 
         card.innerHTML = `
-          <div class="flex items-center justify-between mb-2">
+          <div class="flex items-center justify-between mb-1.5">
             <span class="font-mono text-xs font-bold ${isInfarcted ? 'text-status-infarct' : 'text-ink-950'}">${id}</span>
-            <span class="text-[10px] font-mono uppercase tracking-wider px-2 py-0.5 rounded-full ${
+            <span class="text-[9px] font-mono uppercase tracking-wider px-2 py-0.5 rounded-full ${
               isInfarcted ? 'bg-red-200 text-status-infarct font-bold' : 'bg-stonebg-card text-ink-muted'
             }">
               ${isInfarcted ? 'INFARCTED (-1)' : 'INTACT'}
             </span>
           </div>
-          <div class="font-serif text-sm font-semibold text-ink-950 mb-1 leading-snug">${r.name}</div>
-          <div class="text-[11px] text-ink-muted font-mono">Loss: ${r.percent}%</div>
+          <div class="font-serif text-sm font-semibold text-ink-950 mb-0.5 leading-snug">${r.name}</div>
+          <div class="text-[10px] text-ink-muted font-mono">Loss: ${r.percent}%</div>
         `;
 
         if (r.group === "deep") {
