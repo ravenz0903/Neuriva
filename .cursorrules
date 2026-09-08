@@ -1,0 +1,12 @@
+# .cursorrules — Cursor Editor Specific Guidelines
+
+> **IMPORTANT IDENTITY NOTE:**
+> This configuration is specifically for **Cursor IDE (Composer, Cmd+K, and Editor Agent)**.
+> It is distinct from Claude Code CLI running in the terminal and Antigravity IDE.
+
+### Role & Focus in Cursor
+You are assisting Person 2 with rapid in-editor implementation, Streamlit UI styling, and polygon adjustments.
+- All code must work 100% with `dummy_data/` without waiting for Person A.
+- Never write overlapping bounding boxes for MCA regions; use `cv2.fillPoly` polygons.
+- Always normalize coordinates relative to the brain parenchyma bounding box (`extract_brain_bbox`), not image canvas borders.
+- Keep UI language medically humble and non-prescriptive.

@@ -1,0 +1,2241 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="CerebroASPECTS - automated MCA topographic scoring for acute ischemic stroke triage on non-contrast CT." />
+  <title>CerebroASPECTS - Automated Topographic Stroke Scoring</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            ink:      "#05070c",
+            panel:    "#0a0e16",
+            panel2:   "#0d121c",
+            hairline: "rgba(148,163,184,0.13)",
+            ice:      "#22d3ee",
+            intact:   "#10b981",
+            infarct:  "#ef4444",
+            lesion:   "#eab308"
+          },
+          fontFamily: {
+            sans: ["Inter", "ui-sans-serif", "system-ui", "Segoe UI", "sans-serif"],
+            mono: ["JetBrains Mono", "ui-monospace", "SFMono-Regular", "Consolas", "monospace"]
+          }
+        }
+      }
+    };
+  </script>
+
+  <style>
+    html, body { background: #05070c; }
+    body { font-family: "Inter", system-ui, sans-serif; -webkit-font-smoothing: antialiased; }
+    .tabular { font-variant-numeric: tabular-nums; font-family: "JetBrains Mono", monospace; }
+    .kicker { font-family: "JetBrains Mono", monospace; letter-spacing: 0.2em; text-transform: uppercase; }
+    .hairline { border-color: rgba(148,163,184,0.13); }
+
+    .grid-veil::before {
+      content: ""; position: absolute; inset: 0; pointer-events: none;
+      background-image:
+        linear-gradient(to right, rgba(148,163,184,0.05) 1px, transparent 1px),
+        linear-gradient(to bottom, rgba(148,163,184,0.05) 1px, transparent 1px);
+      background-size: 76px 76px;
+      -webkit-mask-image: radial-gradient(ellipse 70% 60% at 50% 34%, #000 30%, transparent 100%);
+      mask-image: radial-gradient(ellipse 70% 60% at 50% 34%, #000 30%, transparent 100%);
+    }
+
+    .scanline {
+      background-image: repeating-linear-gradient(
+        to bottom, rgba(34,211,238,0.05) 0px, rgba(34,211,238,0.05) 1px, transparent 1px, transparent 3px);
+    }
+
+    .pill-active { background: rgba(34,211,238,0.13); color: #67e8f9; box-shadow: inset 0 0 0 1px rgba(34,211,238,0.42); }
+
+    .reveal { opacity: 0; transform: translateY(20px); transition: opacity .8s cubic-bezier(.16,1,.3,1), transform .8s cubic-bezier(.16,1,.3,1); }
+    .reveal.in { opacity: 1; transform: none; }
+
+    ::-webkit-scrollbar { width: 10px; height: 10px; }
+    ::-webkit-scrollbar-track { background: #05070c; }
+    ::-webkit-scrollbar-thumb { background: #1e293b; border-radius: 8px; }
+    ::-webkit-scrollbar-thumb:hover { background: #334155; }
+
+    canvas { display: block; }
+
+    #dropzone { transition: border-color .18s ease, background-color .18s ease; }
+    #dropzone.is-over { border-color: #22d3ee; background: rgba(34,211,238,0.07); }
+
+    .log-line { opacity: 0; transform: translateY(4px); transition: opacity .25s ease, transform .25s ease; }
+    .log-line.in { opacity: 1; transform: none; }
+
+    #mindmap-wrap { position: relative; }
+    .mm-node { cursor: pointer; outline: none; }
+    .mm-node .mm-box { transition: transform .18s cubic-bezier(.16,1,.3,1); transform-box: fill-box; transform-origin: center; }
+    .mm-node.is-hot .mm-box { transform: scale(1.04); }
+    .mm-link { transition: stroke .2s ease; }
+
+    @keyframes infarctPulse {
+      0%, 100% { opacity: .34; }
+      50%      { opacity: .95; }
+    }
+    .pulse-halo { animation: infarctPulse 1.8s ease-in-out infinite; }
+
+    #mm-card {
+      position: absolute; z-index: 30; width: 310px; pointer-events: none;
+      opacity: 0; transform: translateY(6px) scale(.98);
+      transition: opacity .16s ease, transform .16s ease;
+      background: rgba(10,14,22,0.94);
+      backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px);
+      border: 1px solid rgba(148,163,184,0.22);
+      border-radius: 12px;
+      box-shadow: 0 18px 44px rgba(0,0,0,0.62);
+      overflow: hidden;
+    }
+    #mm-card.in { opacity: 1; transform: none; }
+
+    @media (prefers-reduced-motion: reduce) {
+      .reveal { opacity: 1; transform: none; transition: none; }
+      .pulse-halo { animation: none; opacity: .7; }
+      html { scroll-behavior: auto; }
+    }
+  </style>
+</head>
+<body class="bg-ink text-zinc-300 antialiased selection:bg-ice/25 selection:text-white">
+
+<!-- ================================ NAV ================================ -->
+<header class="fixed inset-x-0 top-0 z-50 border-b border-hairline bg-ink/75 backdrop-blur-xl">
+  <div class="mx-auto flex h-14 max-w-[1440px] items-center justify-between px-5 md:px-8">
+    <a href="#top" class="flex items-center gap-2.5">
+      <span class="relative flex h-6 w-6 items-center justify-center">
+        <span class="absolute inset-0 rotate-45 border border-ice/60"></span>
+        <span class="absolute inset-[6px] rotate-45 bg-ice/70"></span>
+      </span>
+      <span class="text-[13px] font-semibold tracking-[0.16em] text-white">CEREBRO<span class="text-ice">ASPECTS</span></span>
+    </a>
+    <nav class="hidden items-center gap-8 text-[12px] font-medium tracking-wide text-zinc-400 md:flex">
+      <a class="transition hover:text-white" href="#console">Diagnostic Console</a>
+      <a class="transition hover:text-white" href="#mindmap">Territory Map</a>
+      <a class="transition hover:text-white" href="#protocol">Protocol &amp; Roadmap</a>
+    </nav>
+    <div class="flex items-center gap-3">
+      <span id="engine-chip" class="kicker hidden items-center gap-2 rounded-full border border-intact/40 bg-intact/[0.07] px-3 py-1 text-[10px] text-intact sm:flex">
+        <span class="h-1.5 w-1.5 rounded-full bg-current"></span><span id="engine-chip-text">Engine Ready // v1.4</span>
+      </span>
+      <a href="#console" class="rounded-md bg-white px-3.5 py-1.5 text-[12px] font-semibold text-ink transition hover:bg-ice">Open Console</a>
+    </div>
+  </div>
+</header>
+
+<main id="top">
+
+<!-- ================================ HERO ================================ -->
+<section class="relative overflow-hidden border-b border-hairline">
+  <div class="grid-veil pointer-events-none absolute inset-0"></div>
+  <div class="relative mx-auto max-w-[1440px] px-5 pb-20 pt-32 md:px-8 md:pb-28 md:pt-44">
+
+    <div class="kicker inline-flex items-center gap-2.5 rounded-full border border-hairline bg-panel px-3.5 py-1.5 text-[10px] text-zinc-400">
+      <span class="h-1.5 w-1.5 rounded-full bg-intact"></span>
+      Engine Ready &middot; v1.4 &middot; Ingestion Online
+    </div>
+
+    <h1 class="mt-7 max-w-5xl text-4xl font-semibold leading-[1.05] tracking-tight text-white md:text-6xl lg:text-[4.1rem]">
+      Automated Topographic Stroke Scoring for Acute Neuro-Triage.
+    </h1>
+
+    <p class="mt-7 max-w-2xl text-[15px] leading-relaxed text-zinc-400 md:text-[17px]">
+      Objective Middle Cerebral Artery (MCA) infarct quantification on non-contrast CT.
+      Explainable decision support compliant with AHA/ASA guidelines.
+    </p>
+
+    <div class="mt-10 flex flex-wrap items-center gap-4">
+      <a href="#console" class="group inline-flex items-center gap-2.5 rounded-lg bg-white px-5 py-3 text-[13.5px] font-semibold text-ink transition hover:bg-ice">
+        Open Diagnostic Ingestion Console
+        <span class="transition-transform group-hover:translate-x-0.5">&rarr;</span>
+      </a>
+      <a href="#protocol" class="inline-flex items-center gap-2 rounded-lg border border-hairline px-5 py-3 text-[13.5px] font-medium text-zinc-300 transition hover:border-zinc-600 hover:text-white">
+        Clinical protocol
+      </a>
+    </div>
+
+    <dl class="mt-16 grid max-w-4xl grid-cols-2 gap-px overflow-hidden rounded-xl border border-hairline bg-hairline md:grid-cols-4">
+      <div class="bg-panel px-5 py-5">
+        <dt class="kicker text-[9.5px] text-zinc-500">Territories Scored</dt>
+        <dd class="tabular mt-2 text-2xl font-semibold text-white">7<span class="text-sm text-zinc-600"> ganglionic</span></dd>
+      </div>
+      <div class="bg-panel px-5 py-5">
+        <dt class="kicker text-[9.5px] text-zinc-500">Inference Latency</dt>
+        <dd id="metric-latency" class="tabular mt-2 text-2xl font-semibold text-white">&mdash;</dd>
+      </div>
+      <div class="bg-panel px-5 py-5">
+        <dt class="kicker text-[9.5px] text-zinc-500">Reader Variance</dt>
+        <dd class="tabular mt-2 text-2xl font-semibold text-white">0<span class="text-sm text-zinc-600"> %</span></dd>
+      </div>
+      <div class="bg-panel px-5 py-5">
+        <dt class="kicker text-[9.5px] text-zinc-500">Slice Level</dt>
+        <dd class="tabular mt-2 text-2xl font-semibold text-white">Z=28</dd>
+      </div>
+    </dl>
+  </div>
+</section>
+
+<!-- ========================= INGESTION + CONSOLE ========================= -->
+<section id="console" class="border-b border-hairline bg-ink">
+  <div class="mx-auto max-w-[1440px] px-5 py-16 md:px-8 md:py-24">
+
+    <div class="reveal">
+      <p class="kicker text-[11px] text-ice/80">[ Clinical Ingestion Hub ]</p>
+      <h2 class="mt-3 text-2xl font-semibold tracking-tight text-white md:text-3xl">Feed a scan. The engine does the rest.</h2>
+      <p class="mt-4 max-w-3xl text-[14.5px] leading-relaxed text-zinc-400">
+        Uploaded studies and benchmark cohorts run through an identical pipeline: Otsu parenchymal
+        isolation, symmetry-derived midline registration, contralateral attenuation differencing and
+        territory overlap integration. No part of the score is pre-computed.
+      </p>
+    </div>
+
+    <!-- ---------- Ingestion bar ---------- -->
+    <div class="reveal mt-9 grid grid-cols-1 gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.25fr)]">
+
+      <div id="dropzone" class="flex flex-col items-center justify-center rounded-xl border border-dashed border-zinc-700 bg-panel px-6 py-9 text-center">
+        <div class="flex h-11 w-11 items-center justify-center rounded-lg border border-hairline bg-panel2">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" class="h-5 w-5 text-ice">
+            <path d="M12 16V4m0 0L8 8m4-4 4 4" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M4 16v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2" stroke-linecap="round"/>
+          </svg>
+        </div>
+        <p class="mt-4 text-[13.5px] font-medium text-zinc-200">Drag &amp; drop patient axial brain CT</p>
+        <p class="mt-1.5 text-[12px] text-zinc-500">.png &middot; .jpg &middot; .jpeg &middot; .dcm &mdash; or browse to select</p>
+        <button id="browse-btn" class="mt-5 rounded-md border border-hairline px-4 py-2 text-[12.5px] font-medium text-zinc-200 transition hover:border-ice/50 hover:text-ice">
+          Select scan file
+        </button>
+        <input id="file-input" type="file" accept=".png,.jpg,.jpeg,.dcm,image/*" class="hidden" />
+        <p id="drop-msg" class="mt-4 hidden max-w-xs text-[10.5px] leading-relaxed"></p>
+      </div>
+
+      <div class="rounded-xl border border-hairline bg-panel p-4">
+        <div class="flex items-center justify-between">
+          <p class="kicker text-[10px] text-zinc-500">Emergency Benchmark Cohort</p>
+          <p class="kicker text-[10px] text-zinc-600">Anonymized</p>
+        </div>
+        <div class="mt-3 flex flex-col gap-2">
+          <button data-case="m1" class="case-btn flex items-center gap-3 rounded-lg border border-hairline px-3.5 py-2.5 text-left transition hover:border-zinc-600">
+            <span class="tabular shrink-0 rounded bg-white/5 px-1.5 py-0.5 text-[10px] text-zinc-400">01</span>
+            <span class="min-w-0 flex-1">
+              <span class="block truncate text-[13px] font-medium text-zinc-200">Patient #4092 &mdash; Acute M1 Occlusion</span>
+              <span class="block truncate text-[11.5px] text-zinc-500">Dense MCA sign, extensive territory involvement</span>
+            </span>
+          </button>
+          <button data-case="focal" class="case-btn flex items-center gap-3 rounded-lg border border-hairline px-3.5 py-2.5 text-left transition hover:border-zinc-600">
+            <span class="tabular shrink-0 rounded bg-white/5 px-1.5 py-0.5 text-[10px] text-zinc-400">02</span>
+            <span class="min-w-0 flex-1">
+              <span class="block truncate text-[13px] font-medium text-zinc-200">Patient #2104 &mdash; Focal Basal Ganglia Infarct</span>
+              <span class="block truncate text-[11.5px] text-zinc-500">Deep perforator distribution, lentiform predominant</span>
+            </span>
+          </button>
+          <button data-case="normal" class="case-btn flex items-center gap-3 rounded-lg border border-hairline px-3.5 py-2.5 text-left transition hover:border-zinc-600">
+            <span class="tabular shrink-0 rounded bg-white/5 px-1.5 py-0.5 text-[10px] text-zinc-400">03</span>
+            <span class="min-w-0 flex-1">
+              <span class="block truncate text-[13px] font-medium text-zinc-200">Patient #0891 &mdash; Normal Non-Ischemic Baseline</span>
+              <span class="block truncate text-[11.5px] text-zinc-500">No early ischemic change at ganglionic level</span>
+            </span>
+          </button>
+        </div>
+
+        <div class="mt-4 flex items-center justify-between gap-4 border-t border-hairline pt-4">
+          <p class="kicker text-[10px] text-zinc-500">Affected Hemisphere</p>
+          <div class="grid shrink-0 grid-cols-2 gap-1.5 rounded-lg border border-hairline p-1">
+            <button data-hemi="right" class="hemi-btn rounded-md px-3.5 py-1.5 text-[12px] font-medium text-zinc-400 transition">Right MCA</button>
+            <button data-hemi="left"  class="hemi-btn rounded-md px-3.5 py-1.5 text-[12px] font-medium text-zinc-400 transition">Left MCA</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ---------- Viewer + scorecard ---------- -->
+    <div class="reveal mt-5 grid grid-cols-1 gap-5 xl:grid-cols-[minmax(0,1fr)_420px]">
+
+      <div class="overflow-hidden rounded-xl border border-hairline bg-panel">
+        <div class="scanline flex flex-wrap items-center justify-between gap-2 border-b border-hairline px-4 py-2.5">
+          <div class="kicker flex min-w-0 items-center gap-3 text-[10px] text-zinc-500">
+            <span id="viewer-led" class="h-1.5 w-1.5 shrink-0 rounded-full bg-zinc-600"></span>
+            <span id="viewer-series" class="truncate">No study loaded</span>
+          </div>
+          <div id="crosshair" class="tabular shrink-0 text-[10px] tracking-wide text-zinc-600">X ---&nbsp; Y ---&nbsp; HU ---</div>
+        </div>
+
+        <div class="bg-black p-3 sm:p-5">
+          <div class="mx-auto w-full max-w-[640px]">
+            <canvas id="ct-canvas" class="w-full rounded-md" aria-label="Axial non-contrast CT with ASPECTS territory overlay"></canvas>
+          </div>
+        </div>
+
+        <div class="flex flex-wrap items-center gap-x-5 gap-y-2 border-t border-hairline px-4 py-3">
+          <label class="flex cursor-pointer select-none items-center gap-2 text-[12px] text-zinc-400">
+            <input id="tog-regions" type="checkbox" checked class="h-3.5 w-3.5 accent-cyan-400" /> Territory overlay
+          </label>
+          <label class="flex cursor-pointer select-none items-center gap-2 text-[12px] text-zinc-400">
+            <input id="tog-lesion" type="checkbox" checked class="h-3.5 w-3.5 accent-yellow-500" /> Hypodensity contour
+          </label>
+          <label class="flex cursor-pointer select-none items-center gap-2 text-[12px] text-zinc-400">
+            <input id="tog-hud" type="checkbox" checked class="h-3.5 w-3.5 accent-emerald-500" /> DICOM annotation
+          </label>
+          <span class="kicker ml-auto text-[10px] text-zinc-600">W:80 L:40 &middot; Stroke window</span>
+        </div>
+      </div>
+
+      <div class="flex flex-col gap-5">
+
+        <div class="rounded-xl border border-hairline bg-panel p-5">
+          <div class="flex items-end justify-between">
+            <div>
+              <p class="kicker text-[10px] text-zinc-500">ASPECTS</p>
+              <div class="mt-1 flex items-baseline gap-2">
+                <span id="score-value" class="tabular text-6xl font-semibold leading-none tracking-tight text-white md:text-7xl">--</span>
+                <span class="tabular text-xl text-zinc-600">/ 10</span>
+              </div>
+            </div>
+            <div class="text-right">
+              <p class="kicker text-[10px] text-zinc-500">Territories Involved</p>
+              <p id="involved-count" class="tabular mt-1 text-2xl font-semibold text-zinc-300">&mdash;</p>
+            </div>
+          </div>
+
+          <div class="mt-5 h-1.5 w-full overflow-hidden rounded-full bg-white/5">
+            <div id="score-bar" class="h-full rounded-full bg-zinc-700 transition-[width,background-color] duration-300 ease-out" style="width:0%"></div>
+          </div>
+
+          <div id="guardrail" class="mt-5 rounded-lg border border-hairline bg-white/[0.02] px-4 py-3">
+            <span id="guardrail-badge" class="kicker mb-1.5 inline-block text-[10px] font-semibold text-zinc-500">Awaiting Study</span>
+            <p id="guardrail-copy" class="text-[12.5px] leading-relaxed text-zinc-400">
+              Load a scan or select a benchmark cohort to run topographic evaluation.
+            </p>
+          </div>
+        </div>
+
+        <div class="overflow-hidden rounded-xl border border-hairline bg-panel">
+          <div class="flex items-center justify-between border-b border-hairline px-4 py-2.5">
+            <p class="kicker text-[10px] text-zinc-500">Inference Telemetry</p>
+            <p id="telemetry-state" class="kicker text-[10px] text-zinc-600">Idle</p>
+          </div>
+          <div id="telemetry" class="tabular max-h-[220px] min-h-[140px] space-y-1 overflow-y-auto px-4 py-3 text-[11px] leading-relaxed text-zinc-500"></div>
+        </div>
+
+        <div class="overflow-hidden rounded-xl border border-hairline bg-panel">
+          <div class="border-b border-hairline px-4 py-2.5">
+            <p class="kicker text-[10px] text-zinc-500">Study Registration</p>
+          </div>
+          <dl id="study-meta" class="tabular divide-y divide-hairline text-[11.5px]"></dl>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ========================== ANATOMICAL MIND MAP ========================== -->
+<section id="mindmap" class="border-b border-hairline bg-ink">
+  <div class="mx-auto max-w-[1440px] px-5 py-16 md:px-8 md:py-24">
+    <div class="reveal flex flex-col gap-5 md:flex-row md:items-end md:justify-between">
+      <div>
+        <p class="kicker text-[11px] text-ice/80">[ Territory Decomposition ]</p>
+        <h2 class="mt-3 text-2xl font-semibold tracking-tight text-white md:text-3xl">Anatomical territory map</h2>
+        <p class="mt-4 max-w-2xl text-[14.5px] leading-relaxed text-zinc-400">
+          Every deducted point resolves to a named territory, a measured volume fraction and a mean
+          attenuation. Hover any node for the regional read-out; the matching contour highlights on
+          the scan, and hovering the scan pulses the matching node.
+        </p>
+      </div>
+      <div class="kicker flex shrink-0 items-center gap-5 text-[10px] text-zinc-500">
+        <span class="flex items-center gap-2"><span class="h-2 w-2 rounded-full bg-intact"></span>Intact</span>
+        <span class="flex items-center gap-2"><span class="h-2 w-2 rounded-full bg-infarct"></span>Infarcted</span>
+      </div>
+    </div>
+
+    <div id="mindmap-wrap" class="reveal mt-9 overflow-x-auto rounded-xl border border-hairline bg-panel p-4 md:p-6">
+      <svg id="mindmap-svg" viewBox="0 0 1060 480" class="h-auto w-full min-w-[880px]" role="img" aria-label="ASPECTS territory tree"></svg>
+      <div id="mm-card"></div>
+    </div>
+  </div>
+</section>
+
+<!-- ========================= PROTOCOL & ROADMAP ========================= -->
+<section id="protocol" class="border-b border-hairline bg-ink">
+  <div class="mx-auto max-w-[1440px] px-5 py-16 md:px-8 md:py-24">
+    <div class="grid grid-cols-1 gap-14 lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)]">
+      <div class="reveal">
+        <p class="kicker text-[11px] text-ice/80">[ Clinical Protocol ]</p>
+        <h2 class="mt-3 text-2xl font-semibold tracking-tight text-white md:text-4xl">Scope, compliance and Phase 2 milestones.</h2>
+        <p class="mt-5 max-w-lg text-[15px] leading-relaxed text-zinc-400">
+          The engine states its operating envelope explicitly. Territory scoring is a geometric
+          heuristic on a single ganglionic axial level; it is not a substitute for volumetric
+          perfusion assessment or expert interpretation.
+        </p>
+      </div>
+
+      <div class="reveal">
+        <dl class="divide-y divide-hairline border-y border-hairline">
+          <div class="grid grid-cols-1 gap-2 py-6 sm:grid-cols-[190px_minmax(0,1fr)] sm:gap-8">
+            <dt class="kicker pt-0.5 text-[10px] text-zinc-500">Protocol Compliance</dt>
+            <dd class="text-[13.5px] leading-relaxed text-zinc-300">
+              Topographic evaluation aligned with AHA/ASA Acute Ischemic Stroke guidelines and the
+              Alberta Stroke Program Early CT Score template for the ganglionic level.
+            </dd>
+          </div>
+          <div class="grid grid-cols-1 gap-2 py-6 sm:grid-cols-[190px_minmax(0,1fr)] sm:gap-8">
+            <dt class="kicker pt-0.5 text-[10px] text-zinc-500">Detection Method</dt>
+            <dd class="text-[13.5px] leading-relaxed text-zinc-300">
+              Otsu parenchymal isolation with bone exclusion, symmetry-optimised midline registration,
+              and contralateral attenuation differencing against the mirrored hemisphere. Territories
+              are normalized to the segmented parenchyma and swept along its measured radial contour,
+              so scoring is stable across head position, field of view and matrix size.
+            </dd>
+          </div>
+          <div class="grid grid-cols-1 gap-2 py-6 sm:grid-cols-[190px_minmax(0,1fr)] sm:gap-8">
+            <dt class="kicker pt-0.5 text-[10px] text-zinc-500">Stated Limitations</dt>
+            <dd class="text-[13.5px] leading-relaxed text-zinc-300">
+              Supraganglionic cortical territories (M4, M5, M6) are not evaluated at this level, so the
+              reported figure is a ganglionic subscore presented on the 10-point scale. Symmetry-based
+              detection assumes an intact contralateral hemisphere and does not accommodate mass
+              effect, midline shift, bilateral infarction or prior encephalomalacia. Attenuation
+              values derived from 8-bit imagery are estimates, not calibrated Hounsfield units.
+            </dd>
+          </div>
+          <div class="grid grid-cols-1 gap-2 py-6 sm:grid-cols-[190px_minmax(0,1fr)] sm:gap-8">
+            <dt class="kicker pt-0.5 text-[10px] text-zinc-500">Phase 2 Milestone</dt>
+            <dd class="text-[13.5px] leading-relaxed text-zinc-300">
+              3D non-rigid deformable atlas registration (ANTs/SyN), supraganglionic slice integration
+              for M4&ndash;M6, native DICOM ingestion with rescale-slope handling, and multicenter CT
+              scanner calibration across reconstruction kernels.
+            </dd>
+          </div>
+        </dl>
+      </div>
+    </div>
+  </div>
+</section>
+
+<footer class="bg-ink">
+  <div class="mx-auto flex max-w-[1440px] flex-col gap-4 px-5 py-10 md:flex-row md:items-center md:justify-between md:px-8">
+    <div class="flex items-center gap-2.5">
+      <span class="relative flex h-5 w-5 items-center justify-center">
+        <span class="absolute inset-0 rotate-45 border border-ice/50"></span>
+        <span class="absolute inset-[5px] rotate-45 bg-ice/60"></span>
+      </span>
+      <span class="text-[12px] font-semibold tracking-[0.16em] text-zinc-300">CEREBROASPECTS</span>
+    </div>
+    <p class="max-w-2xl text-[11.5px] leading-relaxed text-zinc-500">
+      CerebroASPECTS &bull; 36h National Hackathon Prototype &bull; Observational Clinical Decision
+      Support Tool &bull; Requires Board-Certified Radiologist Verification.
+    </p>
+  </div>
+</footer>
+
+</main>
+
+<script>
+/* ============================================================================
+   0. UTILITIES
+   ========================================================================== */
+const clamp = (v, a, b) => Math.min(b, Math.max(a, v));
+const lerp  = (a, b, t) => a + (b - a) * t;
+const $  = (s) => document.querySelector(s);
+const $$ = (s) => Array.from(document.querySelectorAll(s));
+
+const SIZE = 512;   // working resolution for every raster stage
+
+/* 8-bit grey -> approximate attenuation. Calibrated so normal parenchyma reads
+   ~36 and cytotoxic oedema ~23. This is NOT a true DICOM rescale, and is
+   labelled as an estimate everywhere it surfaces. */
+const toHU = (g) => Math.round(g * 0.31 + 2);
+
+function makeCanvas(w, h) {
+  const c = document.createElement('canvas');
+  c.width = w; c.height = h;
+  return c;
+}
+</script>
+
+<script>
+/* ============================================================================
+   1. ANATOMY
+   Normalized territory definitions, plus synthesis of the benchmark cohorts
+   as genuine 8-bit greyscale pixel data.
+   ========================================================================== */
+const Anatomy = (function () {
+
+  /* --- Deep structures, authored in hemisphere-normalized units -------------
+     x: fraction of parenchymal semi-width (0 = midline, 1 = lateral margin)
+     y: fraction of semi-height (negative = anterior)                        */
+  const DEEP = [
+    { id: 'C',  name: 'Caudate Head', group: 'deep',
+      landmark: 'Lateral margin of the frontal horn',
+      note: 'Caudate involvement reflects ischaemia of the medial lenticulostriate perforators arising from the proximal M1 segment.',
+      pts: [[0.10,-0.385],[0.20,-0.345],[0.265,-0.225],[0.292,-0.085],[0.243,-0.030],
+            [0.212,-0.140],[0.163,-0.262],[0.088,-0.332]] },
+
+    { id: 'L',  name: 'Lentiform Nucleus', group: 'deep',
+      landmark: 'Putamen and globus pallidus, lateral to the internal capsule',
+      note: 'Early loss of the lentiform margin is among the first reliable signs of MCA deep perforator ischaemia and indicates established cytotoxic oedema.',
+      pts: [[0.482,-0.238],[0.560,-0.170],[0.618,-0.056],[0.650,0.058],[0.594,0.238],
+            [0.500,0.202],[0.456,0.072],[0.452,-0.088]] },
+
+    { id: 'IC', name: 'Internal Capsule', group: 'deep',
+      landmark: 'Anterior limb, genu and posterior limb',
+      note: 'Posterior limb involvement carries disproportionate motor morbidity relative to its small infarct volume, given the density of descending corticospinal fibres.',
+      pts: [[0.418,-0.262],[0.366,-0.152],[0.306,-0.028],[0.380,0.128],[0.456,0.282],
+            [0.502,0.220],[0.422,0.086],[0.368,-0.030],[0.416,-0.140],[0.470,-0.222]] },
+
+    { id: 'I',  name: 'Insular Ribbon', group: 'cortical',
+      landmark: 'Insular cortex lining the depth of the Sylvian fissure',
+      note: 'The insular ribbon sits at the distal watershed of the MCA and is characteristically the earliest cortical territory to lose grey-white differentiation.',
+      pts: [[0.700,-0.286],[0.756,-0.146],[0.778,-0.020],[0.772,0.146],[0.726,0.302],
+            [0.664,0.286],[0.712,0.140],[0.718,-0.014],[0.700,-0.130],[0.646,-0.262]] }
+  ];
+
+  /* --- Cortical ribbons, swept along the measured parenchymal contour ------ */
+  const CORTICAL = [
+    { id: 'M1', name: 'M1 – Anterior MCA Cortex', group: 'cortical',
+      landmark: 'Anterior frontal operculum along the convexity',
+      note: 'Anterior cortical involvement widens the infarct beyond the deep perforator distribution and suggests a more proximal or persistent occlusion.',
+      t0: -1.335, t1: -0.505, fi: 0.815, fo: 0.995 },
+
+    { id: 'M2', name: 'M2 – Lateral MCA Cortex', group: 'cortical',
+      landmark: 'Cortex lateral to the insular ribbon',
+      note: 'The lateral segment carries the largest cortical volume at the ganglionic level; involvement here drives the greatest single reduction in salvageable tissue.',
+      t0: -0.425, t1:  0.375, fi: 0.812, fo: 0.995 },
+
+    { id: 'M3', name: 'M3 – Posterior MCA Cortex', group: 'cortical',
+      landmark: 'Posterior temporal to parieto-occipital boundary',
+      note: 'Posterior cortical ischaemia approaches the MCA/PCA watershed and warrants correlation with the posterior circulation.',
+      t0:  0.455, t1:  1.265, fi: 0.818, fo: 0.995 }
+  ];
+
+  const ORDER = ['C', 'L', 'IC', 'I', 'M1', 'M2', 'M3'];
+  const META  = {};
+  DEEP.forEach(r => META[r.id] = r);
+  CORTICAL.forEach(r => META[r.id] = r);
+
+  /* --- Chaikin smoothing so authored contours render organically ---------- */
+  function smoothClosed(points, iterations) {
+    let pts = points.slice();
+    for (let k = 0; k < (iterations || 3); k++) {
+      const out = [];
+      for (let i = 0; i < pts.length; i++) {
+        const a = pts[i], b = pts[(i + 1) % pts.length];
+        out.push([a[0] * 0.75 + b[0] * 0.25, a[1] * 0.75 + b[1] * 0.25]);
+        out.push([a[0] * 0.25 + b[0] * 0.75, a[1] * 0.25 + b[1] * 0.75]);
+      }
+      pts = out;
+    }
+    return pts;
+  }
+
+  function pathFromPoints(pts) {
+    const p = new Path2D();
+    const s = smoothClosed(pts, 3);
+    p.moveTo(s[0][0], s[0][1]);
+    for (let i = 1; i < s.length; i++) p.lineTo(s[i][0], s[i][1]);
+    p.closePath();
+    return p;
+  }
+
+  /* ------------------------------------------------------------------------
+     Build every territory path for a measured anatomical frame.
+       frame = { midX, cy, halfW, halfH, radius(theta), side }
+     radius() returns the parenchymal edge distance from (midX, cy) for that
+     angle. It comes from the real segmented mask, so cortical ribbons hug the
+     actual convexity of whatever study was ingested.
+     ---------------------------------------------------------------------- */
+  function buildPaths(frame) {
+    const sgn = frame.side === 'right' ? 1 : -1;
+    const paths = {};
+
+    for (const r of DEEP) {
+      paths[r.id] = pathFromPoints(r.pts.map(([x, y]) => [
+        frame.midX + sgn * x * frame.halfW,
+        frame.cy + y * frame.halfH
+      ]));
+    }
+
+    const mapT = (t) => (sgn > 0 ? t : Math.PI - t);
+    const at = (t, f) => {
+      const R = frame.radius(t);
+      return [frame.midX + f * R * Math.cos(t), frame.cy + f * R * Math.sin(t)];
+    };
+
+    for (const r of CORTICAL) {
+      const p = new Path2D();
+      const N = 72;
+      for (let i = 0; i <= N; i++) {
+        const [x, y] = at(mapT(lerp(r.t0, r.t1, i / N)), r.fo);
+        i === 0 ? p.moveTo(x, y) : p.lineTo(x, y);
+      }
+      for (let i = N; i >= 0; i--) {
+        const [x, y] = at(mapT(lerp(r.t0, r.t1, i / N)), r.fi);
+        p.lineTo(x, y);
+      }
+      p.closePath();
+      paths[r.id] = p;
+    }
+    return paths;
+  }
+
+  function labelAnchor(id, frame) {
+    const meta = META[id];
+    const sgn = frame.side === 'right' ? 1 : -1;
+    if (meta.pts) {
+      let sx = 0, sy = 0;
+      meta.pts.forEach(([x, y]) => {
+        sx += frame.midX + sgn * x * frame.halfW;
+        sy += frame.cy + y * frame.halfH;
+      });
+      return [sx / meta.pts.length, sy / meta.pts.length];
+    }
+    const tm = (meta.t0 + meta.t1) / 2;
+    const t  = sgn > 0 ? tm : Math.PI - tm;
+    const f  = (meta.fi + meta.fo) / 2;
+    const R  = frame.radius(t);
+    return [frame.midX + f * R * Math.cos(t), frame.cy + f * R * Math.sin(t)];
+  }
+
+  /* ======================================================================
+     BENCHMARK SYNTHESIS
+     Cohorts are rendered as true greyscale pixels and then handed to the
+     same analyser as an uploaded file. The lesion is written into the
+     pixels as genuine hypodensity - never passed to the scorer as metadata.
+     Every structure is drawn mirror-symmetrically so that contralateral
+     differencing is not corrupted by synthesis artefacts.
+     ====================================================================== */
+  const CX = SIZE / 2, CY = SIZE / 2, RX = 176, RY = 224;
+
+  function synthOutline(t, f) {
+    const antr = Math.max(0, -Math.sin(t));
+    const post = Math.max(0,  Math.sin(t));
+    const rx = RX * (1 - 0.115 * antr * antr) * (1 + 0.018 * post);
+    const ry = RY * (1 + 0.020 * post);
+    const a = Math.abs(Math.cos(t)), b = Math.sin(t);
+    const s = 1 + 0.0145 * Math.sin(13 * a + 0.62) + 0.0092 * Math.sin(21 * b + 2.14);
+    return [CX + f * rx * Math.cos(t) * s, CY + f * ry * Math.sin(t) * s];
+  }
+
+  function outlinePath(f, steps) {
+    const n = steps || 420;
+    const p = new Path2D();
+    for (let i = 0; i <= n; i++) {
+      const t = (i / n) * Math.PI * 2;
+      const [x, y] = synthOutline(t, f);
+      i === 0 ? p.moveTo(x, y) : p.lineTo(x, y);
+    }
+    p.closePath();
+    return p;
+  }
+
+  function skullPath(f) {
+    const p = new Path2D();
+    for (let i = 0; i <= 320; i++) {
+      const t = (i / 320) * Math.PI * 2;
+      const antr = Math.max(0, -Math.sin(t));
+      const rx = RX * 1.086 * (1 - 0.095 * antr * antr);
+      const ry = RY * 1.062;
+      const s  = 1 + 0.0055 * Math.sin(7 * Math.abs(Math.cos(t)) + 1.1);
+      const x = CX + f * rx * Math.cos(t) * s, y = CY + f * ry * Math.sin(t) * s;
+      i === 0 ? p.moveTo(x, y) : p.lineTo(x, y);
+    }
+    p.closePath();
+    return p;
+  }
+
+  /* --- Lesion geometry, in synthetic-frame normalized units --------------- */
+  function organicBlob(cxN, cyN, rxN, ryN, seed, sgn) {
+    const p = new Path2D();
+    const N = 200;
+    for (let i = 0; i <= N; i++) {
+      const t = (i / N) * Math.PI * 2;
+      const m = 1
+        + 0.150 * Math.sin(3 * t + seed)
+        + 0.098 * Math.sin(5 * t + seed * 1.7)
+        + 0.055 * Math.sin(8 * t + seed * 2.3)
+        + 0.030 * Math.sin(13 * t + seed * 0.6);
+      const x = CX + sgn * (cxN + rxN * m * Math.cos(t)) * RX;
+      const y = CY + (cyN + ryN * m * Math.sin(t)) * RY;
+      i === 0 ? p.moveTo(x, y) : p.lineTo(x, y);
+    }
+    p.closePath();
+    return p;
+  }
+
+  function mcaTerritoryLesion(sgn) {
+    const mapT = (t) => (sgn > 0 ? t : Math.PI - t);
+    const t0 = -1.30, t1 = 1.24, N = 180;
+    const p = new Path2D();
+    const innerFrac = (u) => {
+      const bell = Math.exp(-Math.pow((u - 0.48) * 2.35, 2));
+      return lerp(0.760, 0.398, bell) + 0.020 * Math.sin(u * 17.0);
+    };
+    const outerFrac = (u) => 1.004 + 0.010 * Math.sin(u * 21.0 + 1.3);
+    for (let i = 0; i <= N; i++) {
+      const u = i / N;
+      const [x, y] = synthOutline(mapT(lerp(t0, t1, u)), outerFrac(u));
+      i === 0 ? p.moveTo(x, y) : p.lineTo(x, y);
+    }
+    for (let i = N; i >= 0; i--) {
+      const u = i / N;
+      const [x, y] = synthOutline(mapT(lerp(t0, t1, u)), innerFrac(u));
+      p.lineTo(x, y);
+    }
+    p.closePath();
+    return p;
+  }
+
+  function lesionPathFor(caseId, side) {
+    const sgn = side === 'right' ? 1 : -1;
+    if (caseId === 'normal') return null;
+    if (caseId === 'focal')  return organicBlob(0.512, 0.030, 0.172, 0.150, 1.9, sgn);
+    return mcaTerritoryLesion(sgn);
+  }
+
+  /* --- Mirror-symmetric acquisition speckle ------------------------------ */
+  let grainCanvas = null;
+  function grain() {
+    if (grainCanvas) return grainCanvas;
+    const g = makeCanvas(SIZE, SIZE);
+    const gx = g.getContext('2d');
+    const img = gx.createImageData(SIZE, SIZE);
+    const d = img.data;
+    let s = 20240908;
+    const half = SIZE / 2;
+    const col = new Uint8Array(half);
+    for (let y = 0; y < SIZE; y++) {
+      for (let x = 0; x < half; x++) {
+        s = (s * 1103515245 + 12345) & 0x7fffffff;
+        col[x] = 150 + (((s >> 16) & 31) - 15);
+      }
+      for (let x = 0; x < half; x++) {
+        const v = col[x];
+        const pair = [half + x, half - 1 - x];
+        for (let k = 0; k < 2; k++) {
+          const i = (y * SIZE + pair[k]) * 4;
+          d[i] = d[i + 1] = d[i + 2] = v; d[i + 3] = 26;
+        }
+      }
+    }
+    gx.putImageData(img, 0, 0);
+    grainCanvas = g;
+    return g;
+  }
+
+  /* --- Render one benchmark cohort to greyscale pixels ------------------- */
+  function renderCase(caseId, side) {
+    const c = makeCanvas(SIZE, SIZE);
+    const x = c.getContext('2d');
+    const grey = (v) => 'rgb(' + v + ',' + v + ',' + v + ')';
+
+    x.fillStyle = '#000'; x.fillRect(0, 0, SIZE, SIZE);
+
+    /* Bone window: outer table, diploic space, inner table, subarachnoid CSF */
+    x.fillStyle = grey(235); x.fill(skullPath(1.000));
+    x.fillStyle = grey(165); x.fill(skullPath(0.978));
+    x.fillStyle = grey(225); x.fill(skullPath(0.958));
+    x.fillStyle = grey(8);   x.fill(skullPath(0.938));
+
+    /* Parenchyma */
+    const brain = outlinePath(1.0);
+    const g = x.createRadialGradient(CX, CY - 26, 26, CX, CY + 8, 250);
+    g.addColorStop(0.00, grey(112));
+    g.addColorStop(0.42, grey(107));
+    g.addColorStop(0.78, grey(99));
+    g.addColorStop(0.93, grey(118));
+    g.addColorStop(1.00, grey(122));
+    x.fillStyle = g; x.fill(brain);
+
+    x.save();
+    x.clip(brain);
+
+    /* Deep grey nuclei and centrum semiovale white matter */
+    for (let s = -1; s <= 1; s += 2) {
+      const gg = x.createRadialGradient(CX + s * 96, CY + 4, 8, CX + s * 96, CY + 4, 96);
+      gg.addColorStop(0, 'rgba(205,205,205,0.46)');
+      gg.addColorStop(1, 'rgba(190,190,190,0)');
+      x.fillStyle = gg;
+      x.beginPath(); x.ellipse(CX + s * 96, CY + 4, 92, 104, s * 0.16, 0, Math.PI * 2); x.fill();
+
+      const gw = x.createRadialGradient(CX + s * 74, CY - 52, 10, CX + s * 74, CY - 52, 120);
+      gw.addColorStop(0, 'rgba(64,64,64,0.58)');
+      gw.addColorStop(1, 'rgba(80,80,80,0)');
+      x.fillStyle = gw;
+      x.beginPath(); x.ellipse(CX + s * 74, CY - 52, 118, 132, 0, 0, Math.PI * 2); x.fill();
+    }
+
+    /* Cortical sulci. Depth, obliquity and spacing are jittered by a
+       deterministic hash of the index, then drawn as mirrored pairs - regular
+       spacing would read as tick marks rather than as sulcal CSF. */
+    const hash = function (n) {
+      const v = Math.sin(n * 127.1 + 311.7) * 43758.5453;
+      return v - Math.floor(v);
+    };
+    x.lineCap = 'round';
+    for (let i = 0; i < 46; i++) {
+      const jitter = (hash(i) - 0.5) * 0.055;
+      const t = -Math.PI / 2 + (i / 46) * Math.PI + 0.05 + jitter;
+      if (Math.abs(Math.cos(t)) < 0.14) continue;
+
+      const h2 = hash(i + 91);
+      const depth = 0.935 + 0.048 * h2;               /* shorter, varied */
+      const sweep = 0.006 + 0.016 * hash(i + 17);     /* oblique, not radial */
+      const bow   = (hash(i + 43) - 0.5) * 0.030;
+
+      x.lineWidth = 1.0 + 0.7 * hash(i + 5);
+      x.strokeStyle = 'rgba(18,18,18,' + (0.34 + 0.26 * hash(i + 63)).toFixed(3) + ')';
+
+      for (let m = 1; m >= -1; m -= 2) {
+        const tt = m > 0 ? t : Math.PI - t;
+        const p0 = synthOutline(tt, 0.996);
+        const p1 = synthOutline(tt + sweep * m, depth);
+        const pm = synthOutline(tt + (sweep * 0.45 + bow) * m, (0.996 + depth) / 2 + 0.010);
+        x.beginPath(); x.moveTo(p0[0], p0[1]);
+        x.quadraticCurveTo(pm[0], pm[1], p1[0], p1[1]); x.stroke();
+      }
+    }
+
+    /* Interhemispheric fissure, anterior and posterior falx */
+    x.strokeStyle = 'rgba(12,12,12,0.92)'; x.lineWidth = 3.2;
+    x.beginPath(); x.moveTo(CX, CY - RY * 0.985); x.lineTo(CX, CY - RY * 0.10); x.stroke();
+    x.beginPath(); x.moveTo(CX, CY + RY * 0.985); x.lineTo(CX, CY + RY * 0.12); x.stroke();
+
+    /* Sylvian fissures */
+    x.strokeStyle = 'rgba(14,14,14,0.7)'; x.lineWidth = 2.4;
+    for (let s = -1; s <= 1; s += 2) {
+      x.beginPath();
+      x.moveTo(CX + s * 0.80 * RX, CY - 0.30 * RY);
+      x.quadraticCurveTo(CX + s * 0.90 * RX, CY + 0.02 * RY, CX + s * 0.78 * RX, CY + 0.34 * RY);
+      x.stroke();
+    }
+
+    /* Ventricular system */
+    const csf = grey(14);
+    x.fillStyle = csf;
+    for (let s = -1; s <= 1; s += 2) {
+      x.beginPath();
+      x.moveTo(CX + s * 0.030 * RX, CY - 0.430 * RY);
+      x.bezierCurveTo(CX + s * 0.115 * RX, CY - 0.375 * RY, CX + s * 0.180 * RX, CY - 0.215 * RY,
+                      CX + s * 0.196 * RX, CY - 0.060 * RY);
+      x.bezierCurveTo(CX + s * 0.150 * RX, CY - 0.135 * RY, CX + s * 0.098 * RX, CY - 0.255 * RY,
+                      CX + s * 0.024 * RX, CY - 0.360 * RY);
+      x.closePath(); x.fill();
+
+      x.beginPath();
+      x.moveTo(CX + s * 0.070 * RX, CY + 0.300 * RY);
+      x.bezierCurveTo(CX + s * 0.185 * RX, CY + 0.360 * RY, CX + s * 0.250 * RX, CY + 0.470 * RY,
+                      CX + s * 0.238 * RX, CY + 0.560 * RY);
+      x.bezierCurveTo(CX + s * 0.185 * RX, CY + 0.470 * RY, CX + s * 0.120 * RX, CY + 0.385 * RY,
+                      CX + s * 0.052 * RX, CY + 0.330 * RY);
+      x.closePath(); x.fill();
+    }
+    /* Third ventricle */
+    x.beginPath();
+    x.moveTo(CX - 0.020 * RX, CY - 0.020 * RY); x.lineTo(CX + 0.020 * RX, CY - 0.020 * RY);
+    x.lineTo(CX + 0.014 * RX, CY + 0.190 * RY); x.lineTo(CX - 0.014 * RX, CY + 0.190 * RY);
+    x.closePath(); x.fill();
+
+    /* Choroid plexus calcification */
+    x.fillStyle = grey(205);
+    for (let s = -1; s <= 1; s += 2) {
+      x.beginPath();
+      x.ellipse(CX + s * 0.185 * RX, CY + 0.335 * RY, 4.2, 3.0, s * 0.4, 0, Math.PI * 2);
+      x.fill();
+    }
+
+    /* ---- Pathology: genuine hypodensity written into the pixel data ---- */
+    const lesion = lesionPathFor(caseId, side);
+    if (lesion) {
+      x.save();
+      x.filter = 'blur(5px)';
+      x.globalCompositeOperation = 'multiply';
+      x.fillStyle = 'rgba(158,158,158,1)';   /* ~0.62x: 36 HU -> 23 HU */
+      x.fill(lesion);
+      x.restore();
+    }
+
+    x.restore();
+
+    /* Acquisition speckle */
+    x.save();
+    x.globalAlpha = 0.5;
+    x.drawImage(grain(), 0, 0);
+    x.restore();
+
+    return c;
+  }
+
+  return { DEEP, CORTICAL, ORDER, META, buildPaths, labelAnchor, renderCase };
+})();
+</script>
+
+<script>
+/* ============================================================================
+   2. VISION - the analysis pipeline.
+   Runs identically for uploaded studies and benchmark cohorts.
+   ========================================================================== */
+const Vision = (function () {
+
+  /* --- Otsu's method ------------------------------------------------------ */
+  function otsu(hist, total) {
+    let sum = 0;
+    for (let i = 0; i < 256; i++) sum += i * hist[i];
+    let sumB = 0, wB = 0, best = 0, thresh = 0;
+    for (let t = 0; t < 256; t++) {
+      wB += hist[t];
+      if (wB === 0) continue;
+      const wF = total - wB;
+      if (wF === 0) break;
+      sumB += t * hist[t];
+      const mB = sumB / wB, mF = (sum - sumB) / wF;
+      const between = wB * wF * (mB - mF) * (mB - mF);
+      if (between > best) { best = between; thresh = t; }
+    }
+    return thresh;
+  }
+
+  function toGrey(canvas) {
+    const d = canvas.getContext('2d', { willReadFrequently: true })
+                    .getImageData(0, 0, SIZE, SIZE).data;
+    const g = new Uint8ClampedArray(SIZE * SIZE);
+    for (let i = 0, p = 0; i < d.length; i += 4, p++) {
+      g[p] = (d[i] * 0.299 + d[i + 1] * 0.587 + d[i + 2] * 0.114) | 0;
+    }
+    return g;
+  }
+
+  function keepLargestComponent(mask) {
+    const label = new Int32Array(mask.length).fill(-1);
+    const stack = new Int32Array(mask.length);
+    let best = -1, bestSize = 0, current = 0;
+    for (let start = 0; start < mask.length; start++) {
+      if (!mask[start] || label[start] !== -1) continue;
+      let sp = 0, size = 0;
+      stack[sp++] = start; label[start] = current;
+      while (sp > 0) {
+        const i = stack[--sp]; size++;
+        const x = i % SIZE, y = (i / SIZE) | 0;
+        if (x > 0        && mask[i - 1]    && label[i - 1]    === -1) { label[i - 1]    = current; stack[sp++] = i - 1; }
+        if (x < SIZE - 1 && mask[i + 1]    && label[i + 1]    === -1) { label[i + 1]    = current; stack[sp++] = i + 1; }
+        if (y > 0        && mask[i - SIZE] && label[i - SIZE] === -1) { label[i - SIZE] = current; stack[sp++] = i - SIZE; }
+        if (y < SIZE - 1 && mask[i + SIZE] && label[i + SIZE] === -1) { label[i + SIZE] = current; stack[sp++] = i + SIZE; }
+      }
+      if (size > bestSize) { bestSize = size; best = current; }
+      current++;
+    }
+    for (let i = 0; i < mask.length; i++) if (mask[i] && label[i] !== best) mask[i] = 0;
+    return bestSize;
+  }
+
+  /* --- Stage 1: parenchymal isolation ------------------------------------ */
+  function segmentParenchyma(grey) {
+    const hist = new Uint32Array(256);
+    for (let i = 0; i < grey.length; i++) hist[grey[i]]++;
+
+    /* First split separates the head from air. */
+    const headT = otsu(hist, grey.length);
+
+    /* Second split, over foreground only, separates soft tissue from bone so
+       the bounding box tracks brain rather than the cranial vault. */
+    const fg = new Uint32Array(256);
+    let fgTotal = 0;
+    for (let v = headT + 1; v < 256; v++) { fg[v] = hist[v]; fgTotal += hist[v]; }
+    let boneT = fgTotal > 0 ? otsu(fg, fgTotal) : 255;
+    boneT = clamp(boneT, headT + 20, 250);
+
+    const mask = new Uint8Array(SIZE * SIZE);
+    for (let i = 0; i < grey.length; i++) {
+      const v = grey[i];
+      if (v > headT && v < boneT) mask[i] = 1;
+    }
+    if (keepLargestComponent(mask) < 2000) return null;
+
+    let minX = SIZE, minY = SIZE, maxX = -1, maxY = -1, area = 0, sx = 0, sy = 0;
+    for (let y = 0; y < SIZE; y++) {
+      for (let x = 0; x < SIZE; x++) {
+        if (!mask[y * SIZE + x]) continue;
+        area++; sx += x; sy += y;
+        if (x < minX) minX = x; if (x > maxX) maxX = x;
+        if (y < minY) minY = y; if (y > maxY) maxY = y;
+      }
+    }
+    if (area < 2000 || maxX < 0) return null;
+
+    return {
+      mask, headT, boneT, area,
+      bbox: { x: minX, y: minY, w: maxX - minX + 1, h: maxY - minY + 1 },
+      centroid: { x: sx / area, y: sy / area }
+    };
+  }
+
+  /* --- Stage 2: midline by mirror-symmetry optimisation ------------------
+     Registration runs on the parenchymal SILHOUETTE, not on intensity. An
+     ischemic core changes attenuation but not the shape of the brain, so a
+     shape-driven cost cannot be dragged toward the affected hemisphere the
+     way an intensity-driven one is. Intensity is then used only to report
+     the residual asymmetry at the chosen midline.                          */
+  function findMidline(grey, seg) {
+    const bbox = seg.bbox;
+    const y0 = bbox.y + ((bbox.h * 0.10) | 0);
+    const y1 = bbox.y + ((bbox.h * 0.90) | 0);
+    const guess = Math.round(bbox.x + bbox.w / 2);
+    const span = Math.max(6, Math.min(26, (bbox.w * 0.10) | 0));
+
+    let bestX = guess, bestCost = Infinity;
+    for (let m = guess - span; m <= guess + span; m++) {
+      const reach = Math.min(m - bbox.x, bbox.x + bbox.w - m) - 2;
+      if (reach < 24) continue;
+      let mismatch = 0, n = 0;
+      for (let y = y0; y < y1; y += 2) {
+        const row = y * SIZE;
+        for (let d = 2; d < reach; d += 2) {
+          if (seg.mask[row + m + d] !== seg.mask[row + m - d]) mismatch++;
+          n++;
+        }
+      }
+      if (n === 0) continue;
+      const cost = mismatch / n;
+      if (cost < bestCost) { bestCost = cost; bestX = m; }
+    }
+
+    /* Residual intensity asymmetry at the registered midline - this is the
+       signal the next stage acts on, so it is worth reporting. */
+    let asym = 0, an = 0;
+    const reach = Math.min(bestX - bbox.x, bbox.x + bbox.w - bestX) - 2;
+    for (let y = y0; y < y1; y += 2) {
+      const row = y * SIZE;
+      for (let d = 4; d < reach; d += 2) {
+        const i = row + bestX + d, j = row + bestX - d;
+        if (!seg.mask[i] || !seg.mask[j]) continue;
+        asym += Math.abs(grey[i] - grey[j]); an++;
+      }
+    }
+    return { midX: bestX, asymmetry: an ? asym / an : 0, shapeCost: bestCost };
+  }
+
+  /* --- Stage 3: contralateral attenuation differencing ------------------- */
+  function boxBlur(src, radius) {
+    const tmp = new Float32Array(src.length);
+    const out = new Float32Array(src.length);
+    const win = radius * 2 + 1;
+    for (let y = 0; y < SIZE; y++) {
+      const row = y * SIZE;
+      let acc = 0;
+      for (let x = -radius; x <= radius; x++) acc += src[row + clamp(x, 0, SIZE - 1)];
+      for (let x = 0; x < SIZE; x++) {
+        tmp[row + x] = acc / win;
+        acc -= src[row + clamp(x - radius, 0, SIZE - 1)];
+        acc += src[row + clamp(x + radius + 1, 0, SIZE - 1)];
+      }
+    }
+    for (let x = 0; x < SIZE; x++) {
+      let acc = 0;
+      for (let y = -radius; y <= radius; y++) acc += tmp[clamp(y, 0, SIZE - 1) * SIZE + x];
+      for (let y = 0; y < SIZE; y++) {
+        out[y * SIZE + x] = acc / win;
+        acc -= tmp[clamp(y - radius, 0, SIZE - 1) * SIZE + x];
+        acc += tmp[clamp(y + radius + 1, 0, SIZE - 1) * SIZE + x];
+      }
+    }
+    return out;
+  }
+
+  const DELTA = 9;             // minimum contralateral attenuation drop (8-bit)
+  const MIN_LESION_PX = 240;   // reject speckle
+
+  function detectHypodensity(grey, seg, midX, side) {
+    const diff = new Float32Array(SIZE * SIZE);
+    const right = side === 'right';
+
+    for (let y = 0; y < SIZE; y++) {
+      const row = y * SIZE;
+      for (let x = 0; x < SIZE; x++) {
+        const i = row + x;
+        if (!seg.mask[i]) continue;
+        if (right ? x <= midX : x >= midX) continue;    // affected side only
+        const mx = 2 * midX - x;
+        if (mx < 0 || mx >= SIZE) continue;
+        const j = row + mx;
+        if (!seg.mask[j]) continue;
+        const d = grey[j] - grey[i];                    // contralateral drop
+        if (d > 0) diff[i] = d;
+      }
+    }
+
+    const smooth = boxBlur(diff, 4);
+    const mask = new Uint8Array(SIZE * SIZE);
+    let count = 0;
+    for (let i = 0; i < mask.length; i++) {
+      if (smooth[i] >= DELTA && seg.mask[i]) { mask[i] = 1; count++; }
+    }
+    if (count < MIN_LESION_PX) return { mask: new Uint8Array(SIZE * SIZE), count: 0 };
+
+    count = keepLargestComponent(mask);
+    if (count < MIN_LESION_PX) return { mask: new Uint8Array(SIZE * SIZE), count: 0 };
+
+    /* Sulcal CSF sits below the tissue window, so it punches thin slits through
+       the core. Close them, or the contour fragments into radial slivers that
+       misrepresent a confluent infarct. */
+    count = fillHoles(mask);
+    return { mask, count };
+  }
+
+  /* Flood the background inward from the border; any zero the flood never
+     reaches is an enclosed hole and belongs to the lesion. */
+  function fillHoles(mask) {
+    const outside = new Uint8Array(mask.length);
+    const stack = new Int32Array(mask.length);
+    let sp = 0;
+
+    for (let x = 0; x < SIZE; x++) {
+      const top = x, bot = (SIZE - 1) * SIZE + x;
+      if (!mask[top] && !outside[top]) { outside[top] = 1; stack[sp++] = top; }
+      if (!mask[bot] && !outside[bot]) { outside[bot] = 1; stack[sp++] = bot; }
+    }
+    for (let y = 0; y < SIZE; y++) {
+      const l = y * SIZE, r = y * SIZE + SIZE - 1;
+      if (!mask[l] && !outside[l]) { outside[l] = 1; stack[sp++] = l; }
+      if (!mask[r] && !outside[r]) { outside[r] = 1; stack[sp++] = r; }
+    }
+
+    while (sp > 0) {
+      const i = stack[--sp];
+      const x = i % SIZE, y = (i / SIZE) | 0;
+      if (x > 0        && !mask[i - 1]    && !outside[i - 1])    { outside[i - 1]    = 1; stack[sp++] = i - 1; }
+      if (x < SIZE - 1 && !mask[i + 1]    && !outside[i + 1])    { outside[i + 1]    = 1; stack[sp++] = i + 1; }
+      if (y > 0        && !mask[i - SIZE] && !outside[i - SIZE]) { outside[i - SIZE] = 1; stack[sp++] = i - SIZE; }
+      if (y < SIZE - 1 && !mask[i + SIZE] && !outside[i + SIZE]) { outside[i + SIZE] = 1; stack[sp++] = i + SIZE; }
+    }
+
+    let count = 0;
+    for (let i = 0; i < mask.length; i++) {
+      if (!mask[i] && !outside[i]) mask[i] = 1;
+      if (mask[i]) count++;
+    }
+    return count;
+  }
+
+  /* --- Measured radial profile of the segmented parenchyma --------------- */
+  function radialProfile(seg, midX, cy) {
+    const N = 360;
+    const R = new Float32Array(N);
+    for (let k = 0; k < N; k++) {
+      const t = (k / N) * Math.PI * 2;
+      const dx = Math.cos(t), dy = Math.sin(t);
+      let last = 0;
+      for (let r = 4; r < 400; r += 1.5) {
+        const x = Math.round(midX + dx * r), y = Math.round(cy + dy * r);
+        if (x < 0 || y < 0 || x >= SIZE || y >= SIZE) break;
+        if (seg.mask[y * SIZE + x]) last = r;
+      }
+      R[k] = last;
+    }
+    /* Circular smoothing removes sulcal notches from the ribbon guide-curve */
+    const S = new Float32Array(N);
+    const w = 7;
+    for (let k = 0; k < N; k++) {
+      let acc = 0;
+      for (let d = -w; d <= w; d++) acc += R[(k + d + N) % N];
+      S[k] = acc / (w * 2 + 1);
+    }
+    return function (t) {
+      const a = ((t % (Math.PI * 2)) + Math.PI * 2) % (Math.PI * 2);
+      const f = a / (Math.PI * 2) * N;
+      const i = Math.floor(f);
+      return lerp(S[i % N], S[(i + 1) % N], f - i);
+    };
+  }
+
+  /* --- Stage 4: territory overlap integration ---------------------------- */
+  const rasterCanvas = makeCanvas(SIZE, SIZE);
+  const rasterCtx = rasterCanvas.getContext('2d', { willReadFrequently: true });
+
+  function rasterizePath(path) {
+    rasterCtx.setTransform(1, 0, 0, 1, 0, 0);
+    rasterCtx.clearRect(0, 0, SIZE, SIZE);
+    rasterCtx.fillStyle = '#fff';
+    rasterCtx.fill(path);
+    return rasterCtx.getImageData(0, 0, SIZE, SIZE).data;
+  }
+
+  const INVOLVEMENT_THRESHOLD = 0.05;
+
+  function scoreTerritories(paths, lesionMask, grey, segMask) {
+    const results = [];
+    let score = 10;
+
+    for (const id of Anatomy.ORDER) {
+      const px = rasterizePath(paths[id]);
+      let area = 0, overlap = 0, sumIn = 0, nIn = 0, sumOut = 0, nOut = 0;
+
+      for (let i = 0, p = 3; i < SIZE * SIZE; i++, p += 4) {
+        if (px[p] <= 127) continue;
+        area++;
+        if (lesionMask[i]) {
+          overlap++;
+          if (segMask[i]) { sumIn += grey[i]; nIn++; }
+        } else if (segMask[i]) {
+          sumOut += grey[i]; nOut++;
+        }
+      }
+
+      const ratio = area > 0 ? overlap / area : 0;
+      const affected = ratio > INVOLVEMENT_THRESHOLD;
+      if (affected) score -= 1;
+
+      results.push({
+        id,
+        meta: Anatomy.META[id],
+        area, overlap, ratio,
+        percent: Math.round(ratio * 1000) / 10,
+        affected,
+        huLesion: nIn  ? toHU(sumIn / nIn)   : null,
+        huNormal: nOut ? toHU(sumOut / nOut) : null
+      });
+    }
+    return { results, score: Math.max(0, score) };
+  }
+
+  /* --- Orchestration ----------------------------------------------------- */
+  function analyze(sourceCanvas, side) {
+    const t0 = performance.now();
+    const grey = toGrey(sourceCanvas);
+
+    const seg = segmentParenchyma(grey);
+    if (!seg) {
+      return { ok: false, reason: 'Unable to isolate brain parenchyma. Verify the study is an axial non-contrast CT slice.' };
+    }
+
+    const mid = findMidline(grey, seg);
+    const cy = seg.centroid.y;
+    const radius = radialProfile(seg, mid.midX, cy);
+
+    const frame = {
+      midX: mid.midX, cy, side,
+      halfW: seg.bbox.w / 2,
+      halfH: seg.bbox.h / 2,
+      radius
+    };
+
+    const paths  = Anatomy.buildPaths(frame);
+    const lesion = detectHypodensity(grey, seg, mid.midX, side);
+    const scored = scoreTerritories(paths, lesion.mask, grey, seg.mask);
+
+    let sum = 0, n = 0;
+    for (let i = 0; i < grey.length; i++) {
+      if (seg.mask[i] && !lesion.mask[i]) { sum += grey[i]; n++; }
+    }
+
+    return {
+      ok: true,
+      grey, seg, frame, paths, lesion,
+      results: scored.results,
+      score: scored.score,
+      midX: mid.midX,
+      asymmetry: mid.asymmetry,
+      refHU: n ? toHU(sum / n) : null,
+      lesionPx: lesion.count,
+      lesionFraction: seg.area ? lesion.count / seg.area : 0,
+      elapsed: Math.round(performance.now() - t0)
+    };
+  }
+
+  return { analyze };
+})();
+</script>
+
+<script>
+/* ============================================================================
+   3. VIEWER - study rendering, overlays, DICOM HUD and the scanning laser
+   ========================================================================== */
+const Viewer = (function () {
+
+  const cvs = $('#ct-canvas');
+  const ctx = cvs.getContext('2d');
+
+  /* Identity-transform buffer for deterministic hit testing */
+  const hitCtx = makeCanvas(SIZE, SIZE).getContext('2d');
+
+  const state = {
+    source: null,
+    analysis: null,
+    hoverId: null,
+    showRegions: true,
+    showLesion: true,
+    showHud: true,
+    stage: 0,          // 0 none, 1 parenchyma, 2 midline, 3 lesion, 4 territories
+    laserY: null,
+    meta: { patient: '--' }
+  };
+
+  let lesionSilhouette = null;
+
+  function setLesionMask(mask) {
+    if (!mask) { lesionSilhouette = null; return; }
+    const c = makeCanvas(SIZE, SIZE);
+    const x = c.getContext('2d');
+    const img = x.createImageData(SIZE, SIZE);
+    const d = img.data;
+    let any = false;
+    for (let i = 0, p = 0; i < mask.length; i++, p += 4) {
+      if (mask[i]) { d[p] = 234; d[p + 1] = 179; d[p + 2] = 8; d[p + 3] = 255; any = true; }
+    }
+    if (!any) { lesionSilhouette = null; return; }
+    x.putImageData(img, 0, 0);
+    lesionSilhouette = c;
+  }
+
+  function drawLesion(c) {
+    if (!lesionSilhouette || !state.showLesion || state.stage < 3) return;
+
+    /* 15% translucent wash */
+    c.save();
+    c.globalAlpha = 0.15;
+    c.drawImage(lesionSilhouette, 0, 0);
+    c.restore();
+
+    /* Crisp 1.5px contour: dilate the silhouette, then punch out the interior */
+    const ring = makeCanvas(SIZE, SIZE);
+    const rx = ring.getContext('2d');
+    const r = 1.5;
+    for (let k = 0; k < 14; k++) {
+      const a = (k / 14) * Math.PI * 2;
+      rx.drawImage(lesionSilhouette, Math.cos(a) * r, Math.sin(a) * r);
+    }
+    rx.globalCompositeOperation = 'destination-out';
+    rx.drawImage(lesionSilhouette, 0, 0);
+    c.drawImage(ring, 0, 0);
+  }
+
+  function drawRegions(c) {
+    if (!state.showRegions || state.stage < 4 || !state.analysis) return;
+    const paths = state.analysis.paths;
+    c.save();
+    c.lineJoin = 'round';
+    for (const r of state.analysis.results) {
+      const path = paths[r.id];
+      const hot = state.hoverId === r.id;
+      const rgb = r.affected ? '239,68,68' : '16,185,129';
+
+      c.fillStyle = 'rgba(' + rgb + ',' + (hot ? 0.30 : 0.115) + ')';
+      c.fill(path);
+      c.strokeStyle = 'rgba(' + rgb + ',' + (hot ? 1 : 0.72) + ')';
+      c.lineWidth = hot ? 2.2 : 1.15;
+      c.stroke(path);
+      if (hot) {
+        c.save();
+        c.shadowColor = 'rgba(' + rgb + ',0.95)';
+        c.shadowBlur = 15;
+        c.stroke(path);
+        c.restore();
+      }
+    }
+    c.restore();
+  }
+
+  function drawRegionLabels(c) {
+    if (!state.showRegions || state.stage < 4 || !state.analysis) return;
+    c.save();
+    c.font = '600 10px "JetBrains Mono", monospace';
+    c.textAlign = 'center';
+    c.textBaseline = 'middle';
+    for (const r of state.analysis.results) {
+      const a = Anatomy.labelAnchor(r.id, state.analysis.frame);
+      const hot = state.hoverId === r.id;
+      c.fillStyle = hot ? '#ffffff' : (r.affected ? 'rgba(252,165,165,0.92)' : 'rgba(167,243,208,0.86)');
+      c.fillText(r.id, a[0], a[1]);
+    }
+    c.restore();
+  }
+
+  function drawParenchymaOutline(c) {
+    if (state.stage < 1 || !state.analysis) return;
+    const f = state.analysis.frame;
+    c.save();
+    c.strokeStyle = 'rgba(34,211,238,0.32)';
+    c.lineWidth = 1;
+    c.beginPath();
+    for (let k = 0; k <= 200; k++) {
+      const t = (k / 200) * Math.PI * 2;
+      const R = f.radius(t);
+      const x = f.midX + R * Math.cos(t), y = f.cy + R * Math.sin(t);
+      k === 0 ? c.moveTo(x, y) : c.lineTo(x, y);
+    }
+    c.closePath(); c.stroke();
+    c.restore();
+  }
+
+  function drawMidline(c) {
+    if (state.stage < 2 || !state.analysis) return;
+    c.save();
+    c.strokeStyle = 'rgba(34,211,238,0.34)';
+    c.lineWidth = 1;
+    c.setLineDash([5, 7]);
+    c.beginPath();
+    c.moveTo(state.analysis.midX, 14);
+    c.lineTo(state.analysis.midX, SIZE - 14);
+    c.stroke();
+    c.restore();
+  }
+
+  function drawLaser(c) {
+    if (state.laserY === null) return;
+    const y = state.laserY;
+    c.save();
+    const g = c.createLinearGradient(0, y - 36, 0, y + 36);
+    g.addColorStop(0.00, 'rgba(34,211,238,0)');
+    g.addColorStop(0.44, 'rgba(34,211,238,0.20)');
+    g.addColorStop(0.50, 'rgba(198,247,255,0.85)');
+    g.addColorStop(0.57, 'rgba(234,179,8,0.26)');
+    g.addColorStop(1.00, 'rgba(234,179,8,0)');
+    c.fillStyle = g;
+    c.fillRect(0, y - 36, SIZE, 72);
+    c.strokeStyle = 'rgba(228,254,255,0.95)';
+    c.lineWidth = 1.4;
+    c.beginPath(); c.moveTo(0, y); c.lineTo(SIZE, y); c.stroke();
+    c.restore();
+  }
+
+  function drawHud(c) {
+    if (!state.showHud) return;
+    const M = 14;
+    c.save();
+    c.font = '500 10px "JetBrains Mono", monospace';
+    c.textBaseline = 'top';
+    const green = '#4ade80', cyan = '#22d3ee', dim = 'rgba(148,163,184,0.72)';
+
+    c.textAlign = 'left';
+    c.fillStyle = green; c.fillText('PATIENT: ' + state.meta.patient, M, M);
+    c.fillStyle = dim;   c.fillText('SCAN: NCCT AXIAL 5.0mm', M, M + 14);
+
+    c.textAlign = 'right';
+    c.fillStyle = cyan;  c.fillText('WINDOW: STROKE (W:80 L:40)', SIZE - M, M);
+    c.fillStyle = dim;   c.fillText('SLICE: Z=28 (GANGLIONIC)', SIZE - M, M + 14);
+
+    c.textBaseline = 'bottom';
+    c.textAlign = 'left';
+    c.fillStyle = dim;   c.fillText('FOV: 220mm | MATRIX: 512x512', M, SIZE - M);
+    c.textAlign = 'right';
+    c.fillStyle = green; c.fillText('ASPECTS ALGORITHM: v1.4-HEURISTIC', SIZE - M, SIZE - M);
+
+    c.textAlign = 'center'; c.textBaseline = 'top';
+    c.fillStyle = 'rgba(148,163,184,0.5)';
+    c.fillText('A', SIZE / 2, M + 2);
+    c.textBaseline = 'bottom'; c.fillText('P', SIZE / 2, SIZE - M - 2);
+    c.save(); c.translate(M + 4, SIZE / 2); c.rotate(-Math.PI / 2);
+    c.textBaseline = 'bottom'; c.fillText('R', 0, 0); c.restore();
+    c.save(); c.translate(SIZE - M - 4, SIZE / 2); c.rotate(Math.PI / 2);
+    c.textBaseline = 'bottom'; c.fillText('L', 0, 0); c.restore();
+
+    if (state.analysis) {
+      c.textAlign = 'left'; c.textBaseline = 'bottom';
+      c.fillStyle = '#eab308';
+      c.fillText('TERRITORY: ' + state.analysis.frame.side.toUpperCase() + ' MCA', M, SIZE - M - 14);
+    }
+    c.restore();
+  }
+
+  function drawIdle(c) {
+    c.fillStyle = '#05070c';
+    c.fillRect(0, 0, SIZE, SIZE);
+    c.save();
+    c.strokeStyle = 'rgba(148,163,184,0.09)';
+    c.lineWidth = 1;
+    for (let i = 1; i < 8; i++) {
+      const p = (i / 8) * SIZE;
+      c.beginPath(); c.moveTo(p, 0); c.lineTo(p, SIZE); c.stroke();
+      c.beginPath(); c.moveTo(0, p); c.lineTo(SIZE, p); c.stroke();
+    }
+    c.textAlign = 'center'; c.textBaseline = 'middle';
+    c.fillStyle = 'rgba(148,163,184,0.45)';
+    c.font = '500 12px "JetBrains Mono", monospace';
+    c.fillText('NO STUDY LOADED', SIZE / 2, SIZE / 2 - 10);
+    c.fillStyle = 'rgba(148,163,184,0.26)';
+    c.font = '400 10.5px "JetBrains Mono", monospace';
+    c.fillText('DROP A SCAN OR SELECT A BENCHMARK COHORT', SIZE / 2, SIZE / 2 + 12);
+    c.restore();
+  }
+
+  function render() {
+    const dpr = Math.min(window.devicePixelRatio || 1, 2);
+    const cssW = cvs.clientWidth || 512;
+    const want = Math.max(1, Math.round(cssW * dpr));
+    if (cvs.width !== want) { cvs.width = want; cvs.height = want; }
+    const k = cvs.width / SIZE;
+    ctx.setTransform(k, 0, 0, k, 0, 0);
+
+    if (!state.source) { drawIdle(ctx); return; }
+
+    ctx.fillStyle = '#000';
+    ctx.fillRect(0, 0, SIZE, SIZE);
+    ctx.drawImage(state.source, 0, 0, SIZE, SIZE);
+
+    drawParenchymaOutline(ctx);
+    drawMidline(ctx);
+    drawLesion(ctx);
+    drawRegions(ctx);
+    drawRegionLabels(ctx);
+    drawLaser(ctx);
+    drawHud(ctx);
+  }
+
+  function hitTest(lx, ly) {
+    if (!state.analysis || state.stage < 4) return null;
+    hitCtx.setTransform(1, 0, 0, 1, 0, 0);
+    for (const id of Anatomy.ORDER) {
+      if (hitCtx.isPointInPath(state.analysis.paths[id], lx, ly)) return id;
+    }
+    return null;
+  }
+
+  let onHover = function () {};
+
+  function bind() {
+    cvs.addEventListener('mousemove', function (e) {
+      const r = cvs.getBoundingClientRect();
+      const lx = (e.clientX - r.left) * (SIZE / r.width);
+      const ly = (e.clientY - r.top)  * (SIZE / r.height);
+
+      const hud = $('#crosshair');
+      if (hud) {
+        let hu = '---';
+        if (state.analysis) {
+          const ix = Math.round(lx), iy = Math.round(ly);
+          if (ix >= 0 && iy >= 0 && ix < SIZE && iy < SIZE) {
+            const i = iy * SIZE + ix;
+            if (state.analysis.seg.mask[i]) hu = String(toHU(state.analysis.grey[i]));
+          }
+        }
+        hud.textContent = 'X ' + String(Math.round(lx)).padStart(3, '0') +
+                          '  Y ' + String(Math.round(ly)).padStart(3, '0') +
+                          '  HU ' + hu;
+      }
+
+      const id = hitTest(lx, ly);
+      cvs.style.cursor = id ? 'pointer' : (state.source ? 'crosshair' : 'default');
+      if (id !== state.hoverId) { state.hoverId = id; render(); onHover(id, 'canvas'); }
+    });
+
+    cvs.addEventListener('mouseleave', function () {
+      if (state.hoverId !== null) { state.hoverId = null; render(); onHover(null, 'canvas'); }
+      const hud = $('#crosshair');
+      if (hud) hud.textContent = 'X ---  Y ---  HU ---';
+    });
+
+    window.addEventListener('resize', render, { passive: true });
+    if (document.fonts && document.fonts.ready) document.fonts.ready.then(render);
+  }
+
+  return {
+    state, render, bind, setLesionMask,
+    setHover: function (id) { if (state.hoverId !== id) { state.hoverId = id; render(); } },
+    setOnHover: function (fn) { onHover = fn; }
+  };
+})();
+</script>
+
+<script>
+/* ============================================================================
+   4. MIND MAP - interactive SVG territory tree with hover-expand cards
+   ========================================================================== */
+const MindMap = (function () {
+
+  const NS = 'http://www.w3.org/2000/svg';
+  const svg  = $('#mindmap-svg');
+  const card = $('#mm-card');
+  const wrap = $('#mindmap-wrap');
+
+  const ROOT   = { x: 22, y: 186, w: 190, h: 96 };
+  const BRANCH = [
+    { id: 'deep', label: 'Subcortical Deep Core', sub: 'Lenticulostriate perforators',
+      x: 300, y: 66, w: 200, h: 64, leaves: ['C', 'L', 'IC'] },
+    { id: 'cortical', label: 'Cortical Convexity', sub: 'Distal MCA branches',
+      x: 300, y: 318, w: 200, h: 64, leaves: ['I', 'M1', 'M2', 'M3'] }
+  ];
+  const LEAF  = { x: 594, w: 272, h: 46 };
+  const LEAFY = { C: 20, L: 78, IC: 136, I: 252, M1: 310, M2: 368, M3: 426 };
+
+  let nodes = {};
+  let results = null;
+  let score = null;
+  let onHover = function () {};
+
+  function el(tag, attrs) {
+    const n = document.createElementNS(NS, tag);
+    for (const k in attrs) n.setAttribute(k, attrs[k]);
+    return n;
+  }
+
+  function link(x1, y1, x2, y2, cls) {
+    const dx = (x2 - x1) * 0.5;
+    return el('path', {
+      d: 'M ' + x1 + ' ' + y1 + ' C ' + (x1 + dx) + ' ' + y1 + ', ' +
+         (x2 - dx) + ' ' + y2 + ', ' + x2 + ' ' + y2,
+      fill: 'none', 'stroke-width': 1.4,
+      stroke: 'rgba(148,163,184,0.22)', class: cls
+    });
+  }
+
+  function build() {
+    svg.innerHTML = '';
+    nodes = {};
+
+    const defs = el('defs', {});
+    defs.innerHTML =
+      '<filter id="mmGlow" x="-60%" y="-60%" width="220%" height="220%">' +
+        '<feGaussianBlur stdDeviation="3.5" result="b"/>' +
+        '<feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>' +
+      '</filter>';
+    svg.appendChild(defs);
+
+    const linkLayer = el('g', {});
+    svg.appendChild(linkLayer);
+
+    /* ---- Root ---- */
+    const rootG = el('g', {});
+    rootG.appendChild(el('rect', {
+      x: ROOT.x, y: ROOT.y, width: ROOT.w, height: ROOT.h, rx: 12,
+      fill: 'rgba(34,211,238,0.07)', stroke: 'rgba(34,211,238,0.42)', 'stroke-width': 1.2
+    }));
+    const rk = el('text', { x: ROOT.x + 18, y: ROOT.y + 26, fill: '#67e8f9',
+      'font-family': 'JetBrains Mono, monospace', 'font-size': 9.5, 'letter-spacing': 2 });
+    rk.textContent = 'ASPECTS';
+    rootG.appendChild(rk);
+
+    const rv = el('text', { id: 'mm-root-score', x: ROOT.x + 18, y: ROOT.y + 63, fill: '#ffffff',
+      'font-family': 'JetBrains Mono, monospace', 'font-size': 28, 'font-weight': 600 });
+    rv.textContent = '--';
+    rootG.appendChild(rv);
+
+    const rt = el('text', { x: ROOT.x + 18, y: ROOT.y + 82, fill: 'rgba(148,163,184,0.72)',
+      'font-family': 'JetBrains Mono, monospace', 'font-size': 8.5, 'letter-spacing': 1.4 });
+    rt.textContent = 'MCA TERRITORY';
+    rootG.appendChild(rt);
+    svg.appendChild(rootG);
+
+    /* ---- Branches and leaves ---- */
+    for (let bi = 0; bi < BRANCH.length; bi++) {
+      const br = BRANCH[bi];
+      linkLayer.appendChild(link(ROOT.x + ROOT.w, ROOT.y + ROOT.h / 2,
+                                 br.x, br.y + br.h / 2, 'mm-link'));
+
+      const bg = el('g', {});
+      bg.appendChild(el('rect', {
+        x: br.x, y: br.y, width: br.w, height: br.h, rx: 10,
+        fill: 'rgba(148,163,184,0.05)', stroke: 'rgba(148,163,184,0.20)', 'stroke-width': 1
+      }));
+      const bl = el('text', { x: br.x + 16, y: br.y + 27, fill: '#e4e4e7',
+        'font-family': 'Inter, sans-serif', 'font-size': 12.5, 'font-weight': 600 });
+      bl.textContent = br.label;
+      bg.appendChild(bl);
+      const bs = el('text', { x: br.x + 16, y: br.y + 45, fill: 'rgba(148,163,184,0.7)',
+        'font-family': 'Inter, sans-serif', 'font-size': 10.5 });
+      bs.textContent = br.sub;
+      bg.appendChild(bs);
+      svg.appendChild(bg);
+
+      for (let li = 0; li < br.leaves.length; li++) {
+        const id = br.leaves[li];
+        const y = LEAFY[id];
+        const lk = link(br.x + br.w, br.y + br.h / 2, LEAF.x, y + LEAF.h / 2, 'mm-link');
+        linkLayer.appendChild(lk);
+
+        const g = el('g', { class: 'mm-node', 'data-region': id, tabindex: '0', role: 'button' });
+
+        const box = el('rect', { class: 'mm-box', x: LEAF.x, y: y, width: LEAF.w, height: LEAF.h,
+          rx: 10, fill: 'rgba(148,163,184,0.05)', stroke: 'rgba(148,163,184,0.20)', 'stroke-width': 1 });
+        g.appendChild(box);
+
+        const halo = el('circle', { class: 'mm-halo', cx: LEAF.x + 22, cy: y + LEAF.h / 2,
+          r: 7, fill: '#52525b', opacity: 0.3 });
+        g.appendChild(halo);
+
+        const dot = el('circle', { class: 'mm-dot', cx: LEAF.x + 22, cy: y + LEAF.h / 2,
+          r: 3.5, fill: '#71717a' });
+        g.appendChild(dot);
+
+        const code = el('text', { x: LEAF.x + 42, y: y + LEAF.h / 2 + 4, fill: 'rgba(148,163,184,0.9)',
+          'font-family': 'JetBrains Mono, monospace', 'font-size': 10.5, 'font-weight': 600 });
+        code.textContent = id;
+        g.appendChild(code);
+
+        const name = el('text', { x: LEAF.x + 78, y: y + LEAF.h / 2 + 4, fill: '#d4d4d8',
+          'font-family': 'Inter, sans-serif', 'font-size': 12 });
+        name.textContent = Anatomy.META[id].name;
+        g.appendChild(name);
+
+        const stat = el('text', { class: 'mm-stat', x: LEAF.x + LEAF.w - 14, y: y + LEAF.h / 2 + 4,
+          fill: 'rgba(148,163,184,0.6)', 'text-anchor': 'end',
+          'font-family': 'JetBrains Mono, monospace', 'font-size': 10 });
+        stat.textContent = '--';
+        g.appendChild(stat);
+
+        svg.appendChild(g);
+        nodes[id] = { g: g, box: box, dot: dot, halo: halo, stat: stat, link: lk };
+
+        (function (rid) {
+          const enter = function () { setHot(rid); onHover(rid, 'mindmap'); };
+          const leave = function () { setHot(null); onHover(null, 'mindmap'); };
+          g.addEventListener('mouseenter', enter);
+          g.addEventListener('focus', enter);
+          g.addEventListener('mouseleave', leave);
+          g.addEventListener('blur', leave);
+        })(id);
+      }
+    }
+    paint();
+  }
+
+  function setResults(res, sc) {
+    results = res;
+    score = sc;
+    const rootScore = svg.querySelector('#mm-root-score');
+    if (rootScore) {
+      rootScore.textContent = (sc === null || sc === undefined)
+        ? '--' : String(sc).padStart(2, '0') + ' / 10';
+    }
+    paint();
+  }
+
+  function paint() {
+    for (let i = 0; i < Anatomy.ORDER.length; i++) {
+      const id = Anatomy.ORDER[i];
+      const n = nodes[id];
+      if (!n) continue;
+      let r = null;
+      if (results) {
+        for (let k = 0; k < results.length; k++) if (results[k].id === id) r = results[k];
+      }
+
+      if (!r) {
+        n.dot.setAttribute('fill', '#71717a');
+        n.halo.setAttribute('fill', '#52525b');
+        n.halo.setAttribute('opacity', '0.28');
+        n.halo.classList.remove('pulse-halo');
+        n.box.setAttribute('stroke', 'rgba(148,163,184,0.20)');
+        n.box.setAttribute('fill', 'rgba(148,163,184,0.05)');
+        n.box.removeAttribute('filter');
+        n.stat.textContent = '--';
+        n.stat.setAttribute('fill', 'rgba(148,163,184,0.6)');
+        n.link.setAttribute('stroke', 'rgba(148,163,184,0.22)');
+        continue;
+      }
+
+      const col = r.affected ? '#ef4444' : '#10b981';
+      n.dot.setAttribute('fill', col);
+      n.halo.setAttribute('fill', col);
+      n.halo.setAttribute('opacity', r.affected ? '0.55' : '0.26');
+      if (r.affected) n.halo.classList.add('pulse-halo');
+      else n.halo.classList.remove('pulse-halo');
+      n.box.setAttribute('stroke', r.affected ? 'rgba(239,68,68,0.5)' : 'rgba(16,185,129,0.42)');
+      n.box.setAttribute('fill', r.affected ? 'rgba(239,68,68,0.08)' : 'rgba(16,185,129,0.06)');
+      if (r.affected) n.box.setAttribute('filter', 'url(#mmGlow)');
+      else n.box.removeAttribute('filter');
+      n.stat.textContent = r.affected ? ('-1 PT · ' + r.percent.toFixed(0) + '%') : '0%';
+      n.stat.setAttribute('fill', r.affected ? '#fca5a5' : 'rgba(167,243,208,0.85)');
+      n.link.setAttribute('stroke', r.affected ? 'rgba(239,68,68,0.42)' : 'rgba(16,185,129,0.30)');
+    }
+  }
+
+  /* --- Hover card -------------------------------------------------------- */
+  function cardHTML(r) {
+    const badge = r.affected
+      ? '<span class="shrink-0 rounded-full bg-infarct/15 px-2 py-0.5 text-[9.5px] font-semibold tracking-wider text-infarct">INFARCTED // -1 PT</span>'
+      : '<span class="shrink-0 rounded-full bg-intact/15 px-2 py-0.5 text-[9.5px] font-semibold tracking-wider text-intact">INTACT // 0%</span>';
+
+    const atten = (r.affected && r.huLesion !== null)
+      ? '<div class="flex items-baseline justify-between gap-3"><span class="text-zinc-500">Attenuation</span>' +
+          '<span class="tabular text-right text-infarct">Mean ' + r.huLesion + ' HU</span></div>' +
+        '<div class="flex items-baseline justify-between gap-3"><span class="text-zinc-500">Uninvolved tissue</span>' +
+          '<span class="tabular text-right text-zinc-300">' + (r.huNormal !== null ? r.huNormal + ' HU' : 'n/a') + '</span></div>'
+      : '<div class="flex items-baseline justify-between gap-3"><span class="text-zinc-500">Attenuation</span>' +
+          '<span class="tabular text-right text-zinc-300">' + (r.huNormal !== null ? 'Mean ' + r.huNormal + ' HU' : 'n/a') + '</span></div>';
+
+    return '' +
+      '<div class="border-b border-hairline px-4 py-3">' +
+        '<div class="flex items-start justify-between gap-3">' +
+          '<div class="min-w-0">' +
+            '<p class="text-[13px] font-semibold text-white">' + r.meta.name +
+              ' <span class="text-zinc-500">(' + r.id + ')</span></p>' +
+            '<p class="mt-0.5 text-[11px] leading-snug text-zinc-500">' + r.meta.landmark + '</p>' +
+          '</div>' + badge +
+        '</div>' +
+      '</div>' +
+      '<div class="space-y-1.5 border-b border-hairline px-4 py-3 text-[11.5px]">' +
+        '<div class="flex items-baseline justify-between gap-3">' +
+          '<span class="text-zinc-500">Hypodensity volume</span>' +
+          '<span class="tabular text-right ' + (r.affected ? 'text-infarct' : 'text-zinc-300') + '">' +
+            r.percent.toFixed(1) + '% volumetric loss</span>' +
+        '</div>' + atten +
+        '<div class="flex items-baseline justify-between gap-3">' +
+          '<span class="text-zinc-500">Territory area</span>' +
+          '<span class="tabular text-right text-zinc-400">' + r.area.toLocaleString() + ' px</span>' +
+        '</div>' +
+      '</div>' +
+      '<div class="px-4 py-3">' +
+        '<p class="text-[11.5px] leading-relaxed text-zinc-400">' + r.meta.note + '</p>' +
+        (r.affected
+          ? '<p class="kicker mt-2 text-[9px] text-zinc-600">Attenuation estimated from 8-bit imagery</p>'
+          : '') +
+      '</div>';
+  }
+
+  function showCard(id) {
+    if (!results) return;
+    let r = null;
+    for (let k = 0; k < results.length; k++) if (results[k].id === id) r = results[k];
+    if (!r) return;
+
+    card.innerHTML = cardHTML(r);
+
+    const nodeRect = nodes[id].g.getBoundingClientRect();
+    const wrapRect = wrap.getBoundingClientRect();
+    const cw = 310;
+
+    let left = (nodeRect.left - wrapRect.left) + wrap.scrollLeft + nodeRect.width + 16;
+    if (left + cw > wrap.scrollLeft + wrapRect.width - 8) {
+      left = (nodeRect.left - wrapRect.left) + wrap.scrollLeft - cw - 16;
+    }
+    left = Math.max(8, left);
+
+    let top = (nodeRect.top - wrapRect.top) + nodeRect.height / 2 - 100;
+    top = clamp(top, 8, Math.max(8, wrapRect.height - 240));
+
+    card.style.left = left + 'px';
+    card.style.top  = top + 'px';
+    card.classList.add('in');
+  }
+
+  function hideCard() { card.classList.remove('in'); }
+
+  function setHot(id) {
+    for (const key in nodes) {
+      if (key === id) nodes[key].g.classList.add('is-hot');
+      else nodes[key].g.classList.remove('is-hot');
+    }
+    if (id && results) showCard(id); else hideCard();
+  }
+
+  return {
+    build: build, setResults: setResults, setHot: setHot,
+    setOnHover: function (fn) { onHover = fn; }
+  };
+})();
+</script>
+
+<script>
+/* ============================================================================
+   5. CONSOLE - ingestion, scanning sequence, orchestration
+   ========================================================================== */
+const Console = (function () {
+
+  const STAGES = [
+    { label: '[01/04] Isolating brain parenchyma (Otsu thresholding)...',  stage: 1 },
+    { label: '[02/04] Interhemispheric fissure & midline alignment...',    stage: 2 },
+    { label: '[03/04] Quantifying ischemic core hypodensity (< 30 HU)...', stage: 3 },
+    { label: '[04/04] Evaluating Ganglionic ASPECTS territories...',       stage: 4 }
+  ];
+
+  const DURATION = 1500;
+  const STAGE_MS = DURATION / STAGES.length;
+
+  const CASE_LABEL = {
+    m1:     ['#4092', 'Acute M1 Occlusion (Dense MCA Sign)'],
+    focal:  ['#2104', 'Focal Basal Ganglia Infarct'],
+    normal: ['#0891', 'Normal Non-Ischemic Baseline']
+  };
+
+  const state = {
+    hemisphere: 'right',
+    caseId: null,
+    uploadedImage: null,
+    uploadedName: null,
+    scanning: false
+  };
+
+  let timers = [];
+  let laserRaf = null;
+
+  function clearTimers() {
+    for (let i = 0; i < timers.length; i++) clearTimeout(timers[i]);
+    timers = [];
+    if (laserRaf) cancelAnimationFrame(laserRaf);
+    laserRaf = null;
+  }
+
+  /* ---- Telemetry -------------------------------------------------------- */
+  function logReset() { $('#telemetry').innerHTML = ''; }
+
+  function logLine(text, tone) {
+    const div = document.createElement('div');
+    div.className = 'log-line ' + (tone || 'text-zinc-500');
+    div.textContent = text;
+    const box = $('#telemetry');
+    box.appendChild(div);
+    /* Reveal via both rAF and a timer so throttled environments still show it */
+    requestAnimationFrame(function () { div.classList.add('in'); });
+    setTimeout(function () { div.classList.add('in'); box.scrollTop = box.scrollHeight; }, 30);
+    return div;
+  }
+
+  function setTelemetryState(text, tone) {
+    const el = $('#telemetry-state');
+    el.textContent = text;
+    el.className = 'kicker text-[10px] ' + (tone || 'text-zinc-600');
+  }
+
+  function setEngineChip(text, tone) {
+    $('#engine-chip-text').textContent = text;
+    $('#engine-chip').className =
+      'kicker hidden items-center gap-2 rounded-full border px-3 py-1 text-[10px] sm:flex ' + tone;
+  }
+
+  /* ---- Scorecard -------------------------------------------------------- */
+  function paintScore(v) {
+    $('#score-value').textContent = (v === null) ? '--' : String(v).padStart(2, '0');
+    $('#score-bar').style.width = (v === null) ? '0%' : (v / 10 * 100) + '%';
+    $('#score-bar').style.backgroundColor = (v === null) ? '#3f3f46' : (v >= 6 ? '#10b981' : '#ef4444');
+  }
+
+  function renderGuardrail(score) {
+    const box = $('#guardrail'), badge = $('#guardrail-badge'), copy = $('#guardrail-copy');
+    if (score === null) {
+      box.className = 'mt-5 rounded-lg border border-hairline bg-white/[0.02] px-4 py-3';
+      badge.className = 'kicker mb-1.5 inline-block text-[10px] font-semibold text-zinc-500';
+      badge.textContent = 'Awaiting Study';
+      copy.textContent = 'Load a scan or select a benchmark cohort to run topographic evaluation.';
+    } else if (score >= 6) {
+      box.className = 'mt-5 rounded-lg border border-intact/45 bg-intact/[0.06] px-4 py-3';
+      badge.className = 'kicker mb-1.5 inline-block text-[10px] font-semibold text-intact';
+      badge.textContent = 'Favorable Ischemic Profile';
+      copy.textContent = 'Favorable ischemic profile. Context: DAWN / DEFUSE-3 trial eligibility window; requires expert radiologist verification.';
+    } else {
+      box.className = 'mt-5 rounded-lg border border-infarct/50 bg-infarct/[0.07] px-4 py-3';
+      badge.className = 'kicker mb-1.5 inline-block text-[10px] font-semibold text-infarct';
+      badge.textContent = 'Extensive Early Ischemic Changes';
+      copy.textContent = 'Extensive early ischemic changes. Elevated reperfusion hemorrhage risk.';
+    }
+  }
+
+  function renderStudyMeta(rows) {
+    $('#study-meta').innerHTML = rows.map(function (row) {
+      return '<div class="flex items-baseline justify-between gap-4 px-4 py-2">' +
+             '<dt class="text-zinc-500">' + row[0] + '</dt>' +
+             '<dd class="text-right text-zinc-300">' + row[1] + '</dd></div>';
+    }).join('');
+  }
+
+  /* ---- Source acquisition ---------------------------------------------- */
+  function buildSource() {
+    if (state.uploadedImage) {
+      const c = makeCanvas(SIZE, SIZE);
+      const x = c.getContext('2d');
+      x.fillStyle = '#000'; x.fillRect(0, 0, SIZE, SIZE);
+      const img = state.uploadedImage;
+      const s = Math.min(SIZE / img.width, SIZE / img.height);
+      const w = img.width * s, h = img.height * s;
+      x.drawImage(img, (SIZE - w) / 2, (SIZE - h) / 2, w, h);
+      return c;
+    }
+    if (state.caseId) return Anatomy.renderCase(state.caseId, state.hemisphere);
+    return null;
+  }
+
+  /* ---- Analysis + scanning sequence ------------------------------------- */
+  function runAnalysis() {
+    clearTimers();
+    const source = buildSource();
+    if (!source) return;
+
+    state.scanning = true;
+    Viewer.state.source = source;
+    Viewer.state.analysis = null;
+    Viewer.state.stage = 0;
+    Viewer.state.hoverId = null;
+    Viewer.state.laserY = null;
+    Viewer.setLesionMask(null);
+    MindMap.setResults(null, null);
+
+    Viewer.state.meta.patient = state.uploadedName
+      ? state.uploadedName.slice(0, 24).toUpperCase()
+      : 'ACUTE_STROKE_TRIAGE_' + CASE_LABEL[state.caseId][0];
+
+    paintScore(null);
+    renderGuardrail(null);
+    $('#involved-count').textContent = '--';
+    logReset();
+    setTelemetryState('Running', 'text-ice');
+    setEngineChip('Analyzing Study...', 'border-ice/40 bg-ice/[0.07] text-ice');
+    $('#viewer-led').className = 'h-1.5 w-1.5 shrink-0 rounded-full bg-ice';
+    $('#viewer-series').textContent = state.uploadedName
+      ? 'Uploaded study · ' + state.uploadedName
+      : 'Series 002 · ' + CASE_LABEL[state.caseId][1];
+    Viewer.render();
+
+    /* The computation runs immediately; the sequence below reveals each
+       stage's real output at the cadence the operator sees. */
+    const result = Vision.analyze(source, state.hemisphere);
+
+    if (!result.ok) {
+      state.scanning = false;
+      setTelemetryState('Failed', 'text-infarct');
+      setEngineChip('Ingestion Error', 'border-infarct/40 bg-infarct/[0.07] text-infarct');
+      logLine('[!!] ' + result.reason, 'text-infarct');
+      $('#viewer-led').className = 'h-1.5 w-1.5 shrink-0 rounded-full bg-infarct';
+      Viewer.state.stage = 0;
+      Viewer.render();
+      renderStudyMeta([['Status', '<span class="text-infarct">Segmentation failed</span>']]);
+      return;
+    }
+
+    Viewer.state.analysis = result;
+
+    /* Laser sweep */
+    const t0 = performance.now();
+    function sweep() {
+      const t = (performance.now() - t0) / DURATION;
+      if (t >= 1) { Viewer.state.laserY = null; Viewer.render(); return; }
+      Viewer.state.laserY = t * SIZE;
+      Viewer.render();
+      laserRaf = requestAnimationFrame(sweep);
+    }
+    laserRaf = requestAnimationFrame(sweep);
+    /* Guarantee the laser is cleared even if rAF is throttled */
+    timers.push(setTimeout(function () {
+      Viewer.state.laserY = null; Viewer.render();
+    }, DURATION + 80));
+
+    /* Stage reveals */
+    STAGES.forEach(function (s, i) {
+      timers.push(setTimeout(function () {
+        logLine(s.label, 'text-zinc-400');
+        Viewer.state.stage = s.stage;
+
+        if (s.stage === 1) {
+          logLine('       parenchyma ' + result.seg.area.toLocaleString() +
+                  ' px · tissue window ' + result.seg.headT + '-' + result.seg.boneT, 'text-zinc-600');
+        } else if (s.stage === 2) {
+          logLine('       midline x=' + result.midX +
+                  ' · residual asymmetry ' + result.asymmetry.toFixed(2), 'text-zinc-600');
+        } else if (s.stage === 3) {
+          Viewer.setLesionMask(result.lesion.mask);
+          logLine(result.lesionPx > 0
+            ? '       ischemic core ' + result.lesionPx.toLocaleString() + ' px · ' +
+              (result.lesionFraction * 100).toFixed(1) + '% of parenchyma'
+            : '       no significant contralateral hypodensity', 'text-zinc-600');
+        } else if (s.stage === 4) {
+          tickScore(result);
+        }
+        Viewer.render();
+      }, i * STAGE_MS + 60));
+    });
+  }
+
+  /* The gauge counts down as each territory is flagged. */
+  function tickScore(result) {
+    const affected = result.results.filter(function (r) { return r.affected; });
+    let current = 10;
+    paintScore(current);
+    MindMap.setResults(result.results, current);
+
+    affected.forEach(function (r, i) {
+      timers.push(setTimeout(function () {
+        current -= 1;
+        paintScore(current);
+        MindMap.setResults(result.results, current);
+        logLine('       -1  ' + r.id + ' · ' + r.meta.name + ' · ' +
+                r.percent.toFixed(1) + '% involvement', 'text-red-400');
+      }, 120 * (i + 1)));
+    });
+
+    timers.push(setTimeout(function () { finish(result); },
+                120 * (affected.length + 1) + 140));
+  }
+
+  function finish(result) {
+    state.scanning = false;
+
+    paintScore(result.score);
+    renderGuardrail(result.score);
+    MindMap.setResults(result.results, result.score);
+
+    const involved = result.results.filter(function (r) { return r.affected; }).length;
+    $('#involved-count').innerHTML = involved + ' <span class="text-sm text-zinc-600">/ 7</span>';
+
+    setTelemetryState('Complete', 'text-intact');
+    setEngineChip('Engine Ready // v1.4', 'border-intact/40 bg-intact/[0.07] text-intact');
+    $('#viewer-led').className = 'h-1.5 w-1.5 shrink-0 rounded-full bg-intact';
+    logLine('[ok] Evaluation complete in ' + result.elapsed + ' ms · ASPECTS ' +
+            result.score + '/10', 'text-emerald-400');
+
+    $('#metric-latency').innerHTML = result.elapsed +
+      '<span class="text-sm text-zinc-600"> ms</span>';
+
+    renderStudyMeta([
+      ['Source', state.uploadedName
+        ? 'Uploaded · ' + state.uploadedName
+        : 'Benchmark ' + CASE_LABEL[state.caseId][0]],
+      ['Affected side', state.hemisphere === 'right' ? 'Right MCA' : 'Left MCA'],
+      ['Parenchyma', result.seg.area.toLocaleString() + ' px'],
+      ['Detected midline', 'x = ' + result.midX],
+      ['Ischemic core', result.lesionPx > 0
+        ? result.lesionPx.toLocaleString() + ' px (' + (result.lesionFraction * 100).toFixed(1) + '%)'
+        : 'None detected'],
+      ['Reference attenuation', result.refHU !== null ? result.refHU + ' HU (est.)' : 'n/a'],
+      ['Inference time', result.elapsed + ' ms']
+    ]);
+  }
+
+  /* ---- Ingestion -------------------------------------------------------- */
+  function loadCase(caseId) {
+    state.caseId = caseId;
+    state.uploadedImage = null;
+    state.uploadedName = null;
+    syncButtons();
+    hideDropMsg();
+    runAnalysis();
+  }
+
+  function showDropMsg(text, tone) {
+    const el = $('#drop-msg');
+    el.textContent = text;
+    el.className = 'mt-4 max-w-xs text-[10.5px] leading-relaxed ' + tone;
+    el.classList.remove('hidden');
+  }
+  function hideDropMsg() { $('#drop-msg').classList.add('hidden'); }
+
+  function handleFile(file) {
+    if (!file) return;
+    const name = file.name || 'study';
+
+    if (/\.dcm$/i.test(name)) {
+      showDropMsg('DICOM decoding needs server-side rescale handling and is out of scope for this prototype. Export the slice as PNG/JPEG, or select a benchmark cohort.', 'text-lesion');
+      return;
+    }
+    if (file.type && !/^image\//.test(file.type)) {
+      showDropMsg('Unsupported file type. Provide a PNG or JPEG axial slice.', 'text-infarct');
+      return;
+    }
+
+    const url = URL.createObjectURL(file);
+    const img = new Image();
+    img.onload = function () {
+      URL.revokeObjectURL(url);
+      state.uploadedImage = img;
+      state.uploadedName = name;
+      state.caseId = null;
+      syncButtons();
+      showDropMsg('Loaded ' + name + ' · ' + img.width + '×' + img.height, 'text-intact');
+      runAnalysis();
+    };
+    img.onerror = function () {
+      URL.revokeObjectURL(url);
+      showDropMsg('Could not decode that image.', 'text-infarct');
+    };
+    img.src = url;
+  }
+
+  function syncButtons() {
+    $$('.case-btn').forEach(function (b) {
+      const active = b.dataset.case === state.caseId;
+      b.classList.toggle('border-ice/55', active);
+      b.classList.toggle('bg-ice/[0.07]', active);
+      b.classList.toggle('border-hairline', !active);
+    });
+    $$('.hemi-btn').forEach(function (b) {
+      b.classList.toggle('pill-active', b.dataset.hemi === state.hemisphere);
+    });
+  }
+
+  /* ---- Wiring ----------------------------------------------------------- */
+  function bind() {
+    $$('.case-btn').forEach(function (b) {
+      b.addEventListener('click', function () { loadCase(b.dataset.case); });
+    });
+
+    $$('.hemi-btn').forEach(function (b) {
+      b.addEventListener('click', function () {
+        state.hemisphere = b.dataset.hemi;
+        syncButtons();
+        if (state.caseId || state.uploadedImage) runAnalysis();
+      });
+    });
+
+    $('#browse-btn').addEventListener('click', function () { $('#file-input').click(); });
+    $('#file-input').addEventListener('change', function (e) { handleFile(e.target.files[0]); });
+
+    const dz = $('#dropzone');
+    ['dragenter', 'dragover'].forEach(function (ev) {
+      dz.addEventListener(ev, function (e) { e.preventDefault(); dz.classList.add('is-over'); });
+    });
+    ['dragleave', 'drop'].forEach(function (ev) {
+      dz.addEventListener(ev, function (e) { e.preventDefault(); dz.classList.remove('is-over'); });
+    });
+    dz.addEventListener('drop', function (e) {
+      const f = e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0];
+      handleFile(f);
+    });
+
+    function bindToggle(sel, key) {
+      const el = $(sel);
+      el.addEventListener('change', function () {
+        Viewer.state[key] = el.checked;
+        Viewer.render();
+      });
+    }
+    bindToggle('#tog-regions', 'showRegions');
+    bindToggle('#tog-lesion',  'showLesion');
+    bindToggle('#tog-hud',     'showHud');
+
+    /* Bidirectional cross-highlight */
+    Viewer.setOnHover(function (id, origin) { if (origin === 'canvas') MindMap.setHot(id); });
+    MindMap.setOnHover(function (id, origin) { if (origin === 'mindmap') Viewer.setHover(id); });
+  }
+
+  function init() {
+    Viewer.bind();
+    MindMap.build();
+    bind();
+    syncButtons();
+    paintScore(null);
+    renderGuardrail(null);
+    renderStudyMeta([['Status', 'Awaiting study']]);
+    logLine('[--] Ingestion online. Awaiting axial NCCT study.', 'text-zinc-600');
+    Viewer.render();
+
+    /* Prime the console so the viewer is never empty on arrival. */
+    setTimeout(function () { loadCase('m1'); }, 400);
+  }
+
+  return { init: init, state: state, runAnalysis: runAnalysis, loadCase: loadCase };
+})();
+
+Console.init();
+</script>
+
+<script>
+/* ============================================================================
+   6. SECTION REVEALS
+   ========================================================================== */
+(function () {
+  const io = new IntersectionObserver(function (entries) {
+    entries.forEach(function (e) {
+      if (e.isIntersecting) { e.target.classList.add('in'); io.unobserve(e.target); }
+    });
+  }, { threshold: 0.04, rootMargin: '0px 0px -2% 0px' });
+
+  $$('.reveal').forEach(function (el) { io.observe(el); });
+
+  /* Fallback for environments where IntersectionObserver is throttled */
+  setTimeout(function () { $$('.reveal').forEach(function (el) { el.classList.add('in'); }); }, 1400);
+})();
+</script>
+
+</body>
+</html>
